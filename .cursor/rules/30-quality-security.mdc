@@ -1,0 +1,16 @@
+---
+description: Testing, secure coding, multi-tenant isolation, and completion requirements.
+globs: **/*.{ts,tsx,sql}
+alwaysApply: false
+---
+
+# Quality and security rules
+
+- Validate untrusted input at boundaries with runtime schemas.
+- Default deny. Authorize every sensitive operation server-side.
+- Add positive and negative authorization tests, especially cross-tenant tests.
+- Add regression tests for bug fixes and tests for state transitions.
+- Never weaken tests just to make CI pass.
+- Do not log secrets, tokens, full private manuscripts, reviewer identities in blinded workflows, or sensitive payloads.
+- Do not expose private manuscript/review/proof files via permanent public URLs.
+- Report exactly which checks were run and which were not.

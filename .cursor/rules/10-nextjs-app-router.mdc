@@ -1,0 +1,15 @@
+---
+description: Next.js App Router, React Server Components, data access, route handlers, and server actions conventions.
+globs: apps/web/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Next.js rules
+
+- Before editing Next.js code, read the relevant version-matched docs in `node_modules/next/dist/docs/` where available.
+- Prefer Server Components by default. Add `"use client"` only at the smallest interactive boundary.
+- Use a server-only Data Access Layer (DAL) for reads and writes. DAL functions must enforce authorization and return minimal DTOs.
+- Treat Server Actions and Route Handlers as public request boundaries: validate input, authenticate, authorize, resolve tenant, rate-limit where appropriate, and return safe errors.
+- Do not place business rules in React components, route files, or Server Actions. Delegate to application use cases.
+- Do not import database clients, secrets, or server-only packages into client components.
+- Keep cache behavior explicit. Never cache private tenant data across users/tenants without a proven cache key and isolation test.

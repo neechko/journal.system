@@ -1,0 +1,15 @@
+---
+description: Scholarly publishing domain, manuscript lifecycle, publication metadata, and JATS content modeling.
+globs: **/*.{ts,tsx,sql,prisma}
+alwaysApply: false
+---
+
+# Scholarly domain rules
+
+- Read `docs/01-domain/DOMAIN_MAP.md`, `GLOSSARY.md`, `EDITORIAL_LIFECYCLE.md`, and `CONTENT_AND_JATS.md` before touching domain logic.
+- Use explicit state transitions and domain/application use cases; never mutate workflow status arbitrarily.
+- Keep Article, ArticleVersion, Publication, Issue, Journal, and external identifiers distinct.
+- Preserve provenance, version history, actor, timestamp, and reason for editorial/production/publishing changes.
+- Model structured article content and JATS interoperability; do not make PDF the canonical content source.
+- Crossref, ORCID, ROR, OAI-PMH, indexing, and preservation are external integrations; isolate them behind adapters and record verification status.
+- Human editors retain academic decision authority.
