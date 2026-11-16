@@ -41,18 +41,18 @@ export const Default: Story = {
   ),
 };
 
-export const Bordered: Story = {
+export const Outlined: Story = {
   args: {
-    variant: 'bordered',
+    variant: 'outlined',
   },
-  render: (args) => (
+  render: (args: React.ComponentProps<typeof Card>) => (
     <Card {...args} style={{ width: '350px' }}>
       <CardHeader>
-        <CardTitle>Bordered Card</CardTitle>
-        <CardDescription>This card has a border variant.</CardDescription>
+        <CardTitle>Outlined Card</CardTitle>
+        <CardDescription>This card has an outlined variant.</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Content with bordered styling.</p>
+        <p>Content with outlined styling.</p>
       </CardContent>
     </Card>
   ),
@@ -62,7 +62,7 @@ export const Elevated: Story = {
   args: {
     variant: 'elevated',
   },
-  render: (args) => (
+  render: (args: React.ComponentProps<typeof Card>) => (
     <Card {...args} style={{ width: '350px' }}>
       <CardHeader>
         <CardTitle>Elevated Card</CardTitle>
@@ -75,18 +75,18 @@ export const Elevated: Story = {
   ),
 };
 
-export const Outlined: Story = {
+export const Filled: Story = {
   args: {
-    variant: 'outlined',
+    variant: 'filled',
   },
-  render: (args) => (
+  render: (args: React.ComponentProps<typeof Card>) => (
     <Card {...args} style={{ width: '350px' }}>
       <CardHeader>
-        <CardTitle>Outlined Card</CardTitle>
-        <CardDescription>This card has an outline border.</CardDescription>
+        <CardTitle>Filled Card</CardTitle>
+        <CardDescription>This card has a filled background.</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Content with outlined styling.</p>
+        <p>Content with filled styling.</p>
       </CardContent>
     </Card>
   ),
@@ -96,7 +96,7 @@ export const Hoverable: Story = {
   args: {
     hoverable: true,
   },
-  render: (args) => (
+  render: (args: React.ComponentProps<typeof Card>) => (
     <Card {...args} style={{ width: '350px' }}>
       <CardHeader>
         <CardTitle>Hoverable Card</CardTitle>
@@ -119,7 +119,7 @@ export const Simple: Story = {
 
 export const ArticleCard: Story = {
   render: () => (
-    <Card variant="bordered" hoverable style={{ width: '350px' }}>
+    <Card variant="outlined" hoverable style={{ width: '350px' }}>
       <CardHeader>
         <CardTitle>Understanding Quantum Computing</CardTitle>
         <CardDescription>Published in Journal of Computer Science • March 15, 2024</CardDescription>

@@ -124,3 +124,16 @@ export const AllSizes: Story = {
     </div>
   ),
 };
+
+export const WithIcons: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+      <Button variant="primary">
+        <span>+</span> Add Item
+      </Button>
+      <Button variant="secondary">
+        <span>⚙</span> Settings
+      </Button>
+    </div>
+  ),
+};
