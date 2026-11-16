@@ -8,25 +8,121 @@
 
 /* ============================================
    Tailwind v4 Theme — Custom Colors used in App
+   (Define actual values here for build-time resolution)
    ============================================ */
 @theme {
-  /* Base semantic colors (mapped to design tokens) */
-  --color-paper: var(--color-background-primary);
-  --color-paper-deep: var(--color-background-secondary);
-  --color-ink: var(--color-text-primary);
-  --color-muted: var(--color-text-secondary);
-  --color-line: var(--color-border-primary);
+  /* Base semantic colors */
+  --color-paper: #ffffff;
+  --color-paper-deep: #fafafa;
+  --color-ink: #171717;
+  --color-muted: #525252;
+  --color-line: #e5e5e5;
 
-  /* Brand colors */
-  --color-forest: var(--color-brand-primary);
-  --color-forest-deep: var(--color-brand-primary-hover);
-  --color-lime: var(--color-status-success);
-  --color-coral: var(--color-status-error);
-  --color-white: var(--color-text-inverse);
+  /* Brand colors (Default — Taylor & Francis blue) */
+  --color-forest: #2563eb;
+  --color-forest-deep: #1d4ed8;
+  --color-lime: #16a34a;
+  --color-coral: #dc2626;
+  --color-white: #ffffff;
+}
+
+/* ============================================
+   Journal Brand Theme Overrides
+   Override generated --color-forest etc. via CSS cascade
+   ============================================ */
+/* Journal of Computer Science — Taylor & Francis Blue */
+[data-journal="jcs"] {
+  --color-forest: #2563eb;
+  --color-forest-deep: #1d4ed8;
+}
+
+/* International Journal of Engineering — Elsevier Green */
+[data-journal="ije"] {
+  --color-forest: #16a34a;
+  --color-forest-deep: #15803d;
+}
+
+/* Medical Research Review — Nature Red */
+[data-journal="mrr"] {
+  --color-forest: #dc2626;
+  --color-forest-deep: #b91c1c;
+}
+
+/* Social Sciences Quarterly — PLOS Orange */
+[data-journal="ssq"] {
+  --color-forest: #ea580c;
+  --color-forest-deep: #c2410c;
+}
+
+/* ============================================
+   Dark Mode Overrides (generated vars + journal theming)
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Generated Tailwind v4 theme variables */
+    --color-paper: #0a0a0a;
+    --color-paper-deep: #171717;
+    --color-ink: #fafafa;
+    --color-muted: #d4d4d4;
+    --color-line: #404040;
+    --color-forest: #3b82f6;
+    --color-forest-deep: #60a5fa;
+    --color-lime: #22c55e;
+    --color-coral: #ef4444;
+    --color-white: #171717;
+
+    /* Journal theming - dark mode */
+    [data-journal="jcs"] {
+      --color-forest: #3b82f6;
+      --color-forest-deep: #60a5fa;
+    }
+    [data-journal="ije"] {
+      --color-forest: #22c55e;
+      --color-forest-deep: #4ade80;
+    }
+    [data-journal="mrr"] {
+      --color-forest: #ef4444;
+      --color-forest-deep: #f87171;
+    }
+    [data-journal="ssq"] {
+      --color-forest: #f97316;
+      --color-forest-deep: #fb923c;
+    }
+  }
+}
+
+/* ============================================
+   Explicit light/dark mode overrides
+   ============================================ */
+[data-theme="light"] {
+  --color-paper: #ffffff;
+  --color-paper-deep: #fafafa;
+  --color-ink: #171717;
+  --color-muted: #525252;
+  --color-line: #e5e5e5;
+  --color-forest: #2563eb;
+  --color-forest-deep: #1d4ed8;
+  --color-lime: #16a34a;
+  --color-coral: #dc2626;
+  --color-white: #ffffff;
+}
+
+[data-theme="dark"] {
+  --color-paper: #0a0a0a;
+  --color-paper-deep: #171717;
+  --color-ink: #fafafa;
+  --color-muted: #d4d4d4;
+  --color-line: #404040;
+  --color-forest: #3b82f6;
+  --color-forest-deep: #60a5fa;
+  --color-lime: #22c55e;
+  --color-coral: #ef4444;
+  --color-white: #171717;
 }
 
 /* ============================================
    CSS Custom Properties — Design Tokens
+   (For components that use CSS variables directly)
    ============================================ */
 
 :root {
@@ -238,132 +334,6 @@
   --z-index-tooltip: 700;
   --z-index-toast: 800;
   --z-index-max: 9999;
-}
-
-/* ============================================
-   Dark Mode
-   ============================================ */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    /* Background */
-    --color-background-primary: #0a0a0a;
-    --color-background-secondary: #171717;
-    --color-background-tertiary: #262626;
-    --color-background-inverse: #ffffff;
-
-    /* Surface */
-    --color-surface-primary: #171717;
-    --color-surface-secondary: #262626;
-    --color-surface-tertiary: #404040;
-    --color-surface-inverse: #f5f5f5;
-
-    /* Border */
-    --color-border-primary: #404040;
-    --color-border-secondary: #525252;
-    --color-border-focus: #60a5fa;
-    --color-border-error: #f87171;
-    --color-border-success: #4ade80;
-
-    /* Text */
-    --color-text-primary: #fafafa;
-    --color-text-secondary: #d4d4d4;
-    --color-text-tertiary: #737373;
-    --color-text-inverse: #171717;
-    --color-text-link: #60a5fa;
-    --color-text-link-hover: #93c5fd;
-
-    /* Brand */
-    --color-brand-primary: #3b82f6;
-    --color-brand-primary-hover: #60a5fa;
-    --color-brand-primary-light: #1e3a8a;
-    --color-brand-secondary: #d4d4d4;
-    --color-brand-secondary-hover: #e5e5e5;
-
-    /* Status */
-    --color-status-success: #22c55e;
-    --color-status-success-light: #052e16;
-    --color-status-warning: #f59e0b;
-    --color-status-warning-light: #422006;
-    --color-status-error: #ef4444;
-    --color-status-error-light: #450a0a;
-    --color-status-info: #3b82f6;
-    --color-status-info-light: #1e3a8a;
-
-    /* Interactive */
-    --color-interactive-hover: #262626;
-    --color-interactive-active: #404040;
-    --color-interactive-disabled: #404040;
-    --color-interactive-disabled-text: #737373;
-
-    /* Overlay */
-    --color-overlay-backdrop: rgba(0, 0, 0, 0.7);
-    --color-overlay-modal: rgba(0, 0, 0, 0.8);
-  }
-}
-
-/* Explicit light mode override */
-[data-theme="light"] {
-  /* Light mode values already in :root */
-}
-
-/* Explicit dark mode override */
-[data-theme="dark"] {
-  /* Dark mode values from prefers-color-scheme: dark */
-}
-
-/* ============================================
-   Journal Brand Overrides (Applied via data-journal attribute)
-   ============================================ */
-/* Journal of Computer Science — Taylor & Francis Blue */
-[data-journal="jcs"] {
-  --color-brand-primary: #2563eb;
-  --color-brand-primary-hover: #1d4ed8;
-  --color-brand-primary-light: #eff6ff;
-}
-
-/* International Journal of Engineering — Elsevier Green */
-[data-journal="ije"] {
-  --color-brand-primary: #16a34a;
-  --color-brand-primary-hover: #15803d;
-  --color-brand-primary-light: #f0fdf4;
-}
-
-/* Medical Research Review — Nature Red */
-[data-journal="mrr"] {
-  --color-brand-primary: #dc2626;
-  --color-brand-primary-hover: #b91c1c;
-  --color-brand-primary-light: #fef2f2;
-}
-
-/* Social Sciences Quarterly — PLOS Orange */
-[data-journal="ssq"] {
-  --color-brand-primary: #ea580c;
-  --color-brand-primary-hover: #c2410c;
-  --color-brand-primary-light: #fff7ed;
-}
-
-/* Dark mode journal overrides */
-@media (prefers-color-scheme: dark) {
-  [data-journal="jcs"] {
-    --color-brand-primary: #3b82f6;
-    --color-brand-primary-hover: #60a5fa;
-    --color-brand-primary-light: #1e3a8a;
-  }
-  [data-journal="ije"] {
-    --color-brand-primary: #22c55e;
-    --color-brand-primary-hover: #4ade80;
-    --color-brand-primary-light: #052e16;
-  }
-  [data-journal="mrr"] {
-    --color-brand-primary: #ef4444;
-    --color-brand-primary-hover: #f87171;
-    --color-brand-primary-light: #450a0a;
-  }
-  [data-journal="ssq"] {
-    --color-brand-primary: #f97316;
-    --color-brand-primary-hover: #fb923c;
-    --color-brand-primary-light: #431407;
-  }
 }
 
 /* ============================================
