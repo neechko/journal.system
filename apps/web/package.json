@@ -11,7 +11,9 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed:demo": "node scripts/seed-local-demo.mjs"
+    "db:seed:demo": "node scripts/seed-local-demo.mjs",
+    "storybook": "storybook dev -p 6006",
+    "build:storybook": "storybook build"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
@@ -27,6 +29,13 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.16",
+    "@storybook/addon-essentials": "^8.6.4",
+    "@storybook/addon-interactions": "^8.6.4",
+    "@storybook/addon-links": "^8.6.4",
+    "@storybook/blocks": "^8.6.4",
+    "@storybook/react": "^8.6.4",
+    "@storybook/react-vite": "^8.6.4",
+    "@storybook/test": "^8.6.4",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
@@ -36,6 +45,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "storybook": "^8.6.4",
     "tailwindcss": "4.3.3",
     "typescript": "^5",
     "vitest": "^4.1.12"
