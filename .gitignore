@@ -1,17 +1,18 @@
 # Dependencies
 node_modules/
+**/opencode.json
 
 # Next.js
-/.next/
-/out/
-/build/
-/dist/
-/next-env.d.ts
+**/.next/
+**/out/
+**/build/
+**/dist/
+**/next-env.d.ts
 
 # Tool output and caches
-/coverage/
-/.turbo/
-/.vercel/
+**/coverage/
+**/.turbo/
+**/.vercel/
 *.tsbuildinfo
 
 # Environment files
@@ -31,3 +32,34 @@ yarn-error.log*
 *.pem
 .DS_Store
 Thumbs.db
+
+# Local private development storage
+/apps/web/.private-storage/
+.vercel
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Storybook
+storybook-static/
+
+# Chromatic
+chromatic/
+
+# Playwright
+playwright-report/
+test-results/
+
+# Supabase
+.supabase/
+supabase/.temp/
+
+# TypeScript
+*.tsbuildinfo

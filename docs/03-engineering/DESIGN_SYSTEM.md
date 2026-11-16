@@ -1,6 +1,7 @@
 # Design System and Product UX
 
-**Status:** Proposed baseline
+**Status:** Proposed baseline  
+**Last reviewed:** 2026-11-15
 
 ## 1. Product experience goals
 
@@ -29,3 +30,29 @@
 ## 4. Reference capture
 
 Saat mempelajari Elsevier/Springer/Atypon atau situs lain, catat pola UX, struktur informasi, dan interaksi sebagai referensi fungsional. Jangan menyalin logo, teks, source assets, atau branding mereka. Simpan screenshot referensi hanya jika hak penggunaan dan provenance jelas.
+
+Pada 2026-11-15, `https://publion.org/` ditinjau sebagai referensi pola
+informasi: navigasi lintas kebutuhan, pernyataan misi yang jelas, jalur ke
+konten jurnal, pengelompokan kapabilitas, ajakan bertindak, dan footer yang
+membantu orientasi. Pola tersebut diadaptasi untuk scope produk ini; identitas,
+teks, aset, dan komposisi visual Publion tidak disalin.
+
+## 5. Implementasi visual awal
+
+Status tetap Proposed; implementasi awal bukan keputusan branding atau klaim
+bahwa target aksesibilitas telah tercapai.
+
+- Area publik menggunakan pola discovery-first dengan navigasi jurnal,
+  pencarian katalog, profil jurnal, dan status fitur yang tersedia atau belum
+  tersedia.
+- Token visual awal memakai latar paper, teks ink, forest untuk aksi utama,
+  lime/coral sebagai aksen, tipografi sans-serif untuk isi, dan serif untuk
+  judul editorial.
+- Header dan footer publik dipakai bersama oleh beranda, katalog, dan profil
+  jurnal. Workspace pengelola memakai token yang sama dengan navigasi privat
+  tersendiri; authorization dan guard tetap berada di server.
+- Data contoh atau jurnal yang dipublikasikan ditampilkan sebagai data nyata
+  dari katalog publik; jangan mengganti data dengan angka, indeksasi, DOI,
+  ISSN, atau afiliasi fiktif untuk mempercantik tampilan.
+- Target WCAG 2.2 AA belum diaudit. Kontras, keyboard, pembaca layar, zoom, dan
+  perangkat bergerak tetap perlu diuji pada iterasi UI berikutnya.

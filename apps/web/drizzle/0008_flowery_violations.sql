@@ -1,0 +1,3 @@
+ALTER TABLE "submission" DROP CONSTRAINT "submission_status_submitted_at_consistent";--> statement-breakpoint
+ALTER TABLE "submission" ADD COLUMN "submitted_manuscript_version" integer;--> statement-breakpoint
+ALTER TABLE "submission" ADD CONSTRAINT "submission_status_submitted_at_consistent" CHECK (("submission"."status" = 'draft' and "submission"."submitted_at" is null and "submission"."submitted_manuscript_version" is null) or ("submission"."status" = 'submitted' and "submission"."submitted_at" is not null and "submission"."submitted_manuscript_version" is not null and "submission"."submitted_manuscript_version" > 0));

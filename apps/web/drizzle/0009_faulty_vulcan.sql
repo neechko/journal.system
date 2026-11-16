@@ -1,0 +1,2 @@
+ALTER TABLE "submission" ADD COLUMN "keywords" text[] DEFAULT '{}'::text[] NOT NULL;--> statement-breakpoint
+ALTER TABLE "submission" ADD CONSTRAINT "submission_keyword_count_valid" CHECK (cardinality("submission"."keywords") <= 20);

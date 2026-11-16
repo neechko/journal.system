@@ -1,0 +1,1191 @@
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import * as schema from "@/server/db/schema";
+import type {
+  EditorialRepository,
+  EditorialTransaction,
+  EditorialSubmission,
+  EditorialSubmissionDetail,
+  ReviewerAssignment,
+  ReviewReport,
+  EditorialDecision,
+  EditorialAuditEvent,
+  ScreeningInput,
+  AssignReviewerInput,
+  UnassignReviewerInput,
+  SubmitReviewInput,
+  RequestRevisionInput,
+  RecordDecisionInput,
+  WithdrawSubmissionInput,
+  SubmissionAuthor,
+  SubmissionManuscript,
+} from "../application/ports";
+import type { SubmissionStatus } from "../domain/state-machine";
+
+function mapSubmissionRow(row: any): EditorialSubmission {
+  return {
+    id: row.id,
+    organizationId: row.organizationId,
+    journalId: row.journalId,
+    organizationName: row.organizationName,
+    organizationSlug: row.organizationSlug,
+    journalTitle: row.journalTitle,
+    journalSlug: row.journalSlug,
+    title: row.title,
+    abstract: row.abstract,
+    keywords: row.keywords,
+    status: row.status as SubmissionStatus,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    submittedAt: row.submittedAt,
+    submittedManuscriptVersion: row.submittedManuscriptVersion,
+    currentManuscriptVersion: row.currentManuscriptVersion,
+  };
+}
+
+export function createPostgresEditorialRepository<
+  TQueryResult extends PgQueryResultHKT,
+>(
+  database: PgDatabase<TQueryResult, typeof schema>,
+): EditorialRepository {
+  return {
+    async transaction<T>(
+      work: (transaction: EditorialTransaction) => Promise<T>,
+    ): Promise<T> {
+      return database.transaction(async (tx) => {
+        const transaction: EditorialTransaction = {
+          async findSubmissionForEditor(editorUserId, submissionId) {
+            const rows = await tx
+              .select({
+                id: schema.submissions.id,
+                organizationId: schema.organizations.id,
+                journalId: schema.submissions.journalId,
+                organizationName: schema.organizations.name,
+                organizationSlug: schema.organizations.slug,
+                journalTitle: schema.journals.title,
+                journalSlug: schema.journals.slug,
+                title: schema.submissions.title,
+                abstract: schema.submissions.abstract,
+                keywords: schema.submissions.keywords,
+                status: schema.submissions.status,
+                createdBy: schema.submissions.createdBy,
+                createdAt: schema.submissions.createdAt,
+                updatedAt: schema.submissions.updatedAt,
+                submittedAt: schema.submissions.submittedAt,
+                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+                currentManuscriptVersion: sql<number>`(
+                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+                  FROM ${schema.submissionManuscripts}
+                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+                )`.as("currentManuscriptVersion"),
+              })
+              .from(schema.submissions)
+              .innerJoin(
+                schema.journals,
+                eq(schema.journals.id, schema.submissions.journalId),
+              )
+              .innerJoin(
+                schema.organizations,
+                eq(schema.organizations.id, schema.journals.organizationId),
+              )
+              .innerJoin(
+                schema.organizationMemberships,
+                and(
+                  eq(schema.organizationMemberships.organizationId, schema.organizations.id),
+                  eq(schema.organizationMemberships.userId, editorUserId),
+                  eq(schema.organizationMemberships.role, "organization_admin"),
+                ),
+              )
+              .where(eq(schema.submissions.id, submissionId))
+              .limit(1);
+
+            return rows[0] ? mapSubmissionRow(rows[0]) : null;
+          },
+
+          async listSubmissionsForEditor(editorUserId, journalId, statuses) {
+            const conditions = [
+              eq(schema.journals.id, journalId),
+              eq(schema.organizationMemberships.userId, editorUserId),
+              eq(schema.organizationMemberships.role, "organization_admin"),
+            ];
+
+            if (statuses && statuses.length > 0) {
+              conditions.push(inArray(schema.submissions.status, statuses));
+            }
+
+            const rows = await tx
+              .select({
+                id: schema.submissions.id,
+                organizationId: schema.organizations.id,
+                journalId: schema.submissions.journalId,
+                organizationName: schema.organizations.name,
+                organizationSlug: schema.organizations.slug,
+                journalTitle: schema.journals.title,
+                journalSlug: schema.journals.slug,
+                title: schema.submissions.title,
+                abstract: schema.submissions.abstract,
+                keywords: schema.submissions.keywords,
+                status: schema.submissions.status,
+                createdBy: schema.submissions.createdBy,
+                createdAt: schema.submissions.createdAt,
+                updatedAt: schema.submissions.updatedAt,
+                submittedAt: schema.submissions.submittedAt,
+                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+                currentManuscriptVersion: sql<number>`(
+                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+                  FROM ${schema.submissionManuscripts}
+                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+                )`.as("currentManuscriptVersion"),
+              })
+              .from(schema.submissions)
+              .innerJoin(
+                schema.journals,
+                eq(schema.journals.id, schema.submissions.journalId),
+              )
+              .innerJoin(
+                schema.organizations,
+                eq(schema.organizations.id, schema.journals.organizationId),
+              )
+              .innerJoin(
+                schema.organizationMemberships,
+                and(
+                  eq(schema.organizationMemberships.organizationId, schema.organizations.id),
+                  eq(schema.organizationMemberships.userId, editorUserId),
+                  eq(schema.organizationMemberships.role, "organization_admin"),
+                ),
+              )
+              .where(and(...conditions))
+              .orderBy(desc(schema.submissions.updatedAt));
+
+            return rows.map(mapSubmissionRow);
+          },
+
+          async getSubmissionDetailForEditor(editorUserId, submissionId) {
+            const submission = await this.findSubmissionForEditor(editorUserId, submissionId);
+            if (!submission) return null;
+
+            return this.buildSubmissionDetail(submission.id, submission.organizationId);
+          },
+
+          async getSubmissionDetailForReviewer(reviewerUserId, submissionId) {
+            const assignment = await tx
+              .select({ id: schema.reviewerAssignments.id })
+              .from(schema.reviewerAssignments)
+              .where(
+                and(
+                  eq(schema.reviewerAssignments.reviewerUserId, reviewerUserId),
+                  eq(schema.reviewerAssignments.submissionId, submissionId),
+                ),
+              )
+              .limit(1);
+
+            if (!assignment[0]) return null;
+
+            const submission = await tx
+              .select({
+                id: schema.submissions.id,
+                organizationId: schema.organizations.id,
+                journalId: schema.submissions.journalId,
+                organizationName: schema.organizations.name,
+                organizationSlug: schema.organizations.slug,
+                journalTitle: schema.journals.title,
+                journalSlug: schema.journals.slug,
+                title: schema.submissions.title,
+                abstract: schema.submissions.abstract,
+                keywords: schema.submissions.keywords,
+                status: schema.submissions.status,
+                createdBy: schema.submissions.createdBy,
+                createdAt: schema.submissions.createdAt,
+                updatedAt: schema.submissions.updatedAt,
+                submittedAt: schema.submissions.submittedAt,
+                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+                currentManuscriptVersion: sql<number>`(
+                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+                  FROM ${schema.submissionManuscripts}
+                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+                )`.as("currentManuscriptVersion"),
+              })
+              .from(schema.submissions)
+              .innerJoin(
+                schema.journals,
+                eq(schema.journals.id, schema.submissions.journalId),
+              )
+              .innerJoin(
+                schema.organizations,
+                eq(schema.organizations.id, schema.journals.organizationId),
+              )
+              .where(eq(schema.submissions.id, submissionId))
+              .limit(1);
+
+            if (!submission[0]) return null;
+
+            return this.buildSubmissionDetail(submission[0].id, submission[0].organizationId);
+          },
+
+          async screenSubmission(input: ScreeningInput) {
+            const { submissionId, editorUserId, pass, reason } = input;
+
+            const newStatus = pass ? "under_review" : "rejected";
+            const now = new Date();
+
+            const [updated] = await tx
+              .update(schema.submissions)
+              .set({
+                status: newStatus,
+                updatedAt: now,
+                ...(pass ? {} : { rejectedAt: now, rejectionReason: reason }),
+              })
+              .where(
+                and(
+                  eq(schema.submissions.id, submissionId),
+                  eq(schema.submissions.createdBy, editorUserId),
+                ),
+              )
+              .returning({
+                id: schema.submissions.id,
+                organizationId: schema.organizations.id,
+                journalId: schema.submissions.journalId,
+                organizationName: schema.organizations.name,
+                organizationSlug: schema.organizations.slug,
+                journalTitle: schema.journals.title,
+                journalSlug: schema.journals.slug,
+                title: schema.submissions.title,
+                abstract: schema.submissions.abstract,
+                keywords: schema.submissions.keywords,
+                status: schema.submissions.status,
+                createdBy: schema.submissions.createdBy,
+                createdAt: schema.submissions.createdAt,
+                updatedAt: schema.submissions.updatedAt,
+                submittedAt: schema.submissions.submittedAt,
+                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+                currentManuscriptVersion: sql<number>`(
+                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+                  FROM ${schema.submissionManuscripts}
+                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+                )`.as("currentManuscriptVersion"),
+              })
+              .from(schema.submissions)
+              .innerJoin(
+                schema.journals,
+                eq(schema.journals.id, schema.submissions.journalId),
+              )
+              .innerJoin(
+                schema.organizations,
+                eq(schema.organizations.id, schema.journals.organizationId),
+              );
+
+            if (!updated) {
+              throw new Error("Submission not found");
+            }
+
+            return mapSubmissionRow(updated);
+          },
+
+          async assignReviewer(input: AssignReviewerInput) {
+            const { submissionId, editorUserId, reviewerUserId, role, dueAt, isBlind } = input;
+
+            const [assignment] = await tx
+              .insert(schema.reviewerAssignments)
+              .values({
+                submissionId,
+                reviewerUserId,
+                role,
+                assignedBy: editorUserId,
+                dueAt,
+                isBlind,
+              })
+              .returning({
+                id: schema.reviewerAssignments.id,
+                submissionId: schema.reviewerAssignments.submissionId,
+                reviewerUserId: schema.reviewerAssignments.reviewerUserId,
+                role: schema.reviewerAssignments.role,
+                assignedAt: schema.reviewerAssignments.assignedAt,
+                assignedBy: schema.reviewerAssignments.assignedBy,
+                dueAt: schema.reviewerAssignments.dueAt,
+                completedAt: schema.reviewerAssignments.completedAt,
+                unassignedAt: schema.reviewerAssignments.unassignedAt,
+                unassignedBy: schema.reviewerAssignments.unassignedBy,
+                unassignedReason: schema.reviewerAssignments.unassignedReason,
+                isBlind: schema.reviewerAssignments.isBlind,
+              });
+
+            return mapAssignmentRow(assignment);
+          },
+
+          async unassignReviewer(input: UnassignReviewerInput) {
+            const { assignmentId, editorUserId, reason } = input;
+
+            const [updated] = await tx
+              .update(schema.reviewerAssignments)
+              .set({
+                unassignedAt: new Date(),
+                unassignedBy: editorUserId,
+                unassignedReason: reason,
+              })
+              .where(eq(schema.reviewerAssignments.id, assignmentId))
+              .returning({
+                id: schema.reviewerAssignments.id,
+                submissionId: schema.reviewerAssignments.submissionId,
+                reviewerUserId: schema.reviewerAssignments.reviewerUserId,
+                role: schema.reviewerAssignments.role,
+                assignedAt: schema.reviewerAssignments.assignedAt,
+                assignedBy: schema.reviewerAssignments.assignedBy,
+                dueAt: schema.reviewerAssignments.dueAt,
+                completedAt: schema.reviewerAssignments.completedAt,
+                unassignedAt: schema.reviewerAssignments.unassignedAt,
+                unassignedBy: schema.reviewerAssignments.unassignedBy,
+                unassignedReason: schema.reviewerAssignments.unassignedReason,
+                isBlind: schema.reviewerAssignments.isBlind,
+              });
+
+            if (!updated) {
+              throw new Error("Assignment not found");
+            }
+
+            return mapAssignmentRow(updated);
+          },
+
+          async submitReview(input: SubmitReviewInput) {
+            const { assignmentId, reviewerUserId, recommendation, commentsToAuthor, commentsToEditor, scores } = input;
+
+            const [assignment] = await tx
+              .select({ id: schema.reviewerAssignments.id, submissionId: schema.reviewerAssignments.submissionId })
+              .from(schema.reviewerAssignments)
+              .where(
+                and(
+                  eq(schema.reviewerAssignments.id, assignmentId),
+                  eq(schema.reviewerAssignments.reviewerUserId, reviewerUserId),
+                ),
+              )
+              .limit(1);
+
+            if (!assignment) {
+              throw new Error("Assignment not found");
+            }
+
+            const existingReviews = await tx
+              .select({ version: schema.reviewReports.version })
+              .from(schema.reviewReports)
+              .where(eq(schema.reviewReports.assignmentId, assignmentId))
+              .orderBy(desc(schema.reviewReports.version))
+              .limit(1);
+
+            const version = (existingReviews[0]?.version ?? 0) + 1;
+
+            const [report] = await tx
+              .insert(schema.reviewReports)
+              .values({
+                assignmentId,
+                submissionId: assignment.submissionId,
+                reviewerUserId,
+                version,
+                recommendation,
+                commentsToAuthor,
+                commentsToEditor,
+                scores: scores ? JSON.stringify(scores) : null,
+              })
+              .returning({
+                id: schema.reviewReports.id,
+                assignmentId: schema.reviewReports.assignmentId,
+                submissionId: schema.reviewReports.submissionId,
+                reviewerUserId: schema.reviewReports.reviewerUserId,
+                version: schema.reviewReports.version,
+                recommendation: schema.reviewReports.recommendation,
+                commentsToAuthor: schema.reviewReports.commentsToAuthor,
+                commentsToEditor: schema.reviewReports.commentsToEditor,
+                scores: schema.reviewReports.scores,
+                submittedAt: schema.reviewReports.submittedAt,
+                acknowledgedAt: schema.reviewReports.acknowledgedAt,
+              });
+
+            await tx
+              .update(schema.reviewerAssignments)
+              .set({ completedAt: new Date() })
+              .where(eq(schema.reviewerAssignments.id, assignmentId));
+
+            return mapReviewReportRow(report);
+          },
+
+          async requestRevision(input: RequestRevisionInput) {
+            const { submissionId, editorUserId, reason, reviewerRecommendations } = input;
+
+            const now = new Date();
+            const [updated] = await tx
+              .update(schema.submissions)
+              .set({
+                status: "revision_requested",
+                updatedAt: now,
+                revisionRequestedAt: now,
+                revisionReason: reason,
+              })
+              .where(eq(schema.submissions.id, submissionId))
+              .returning({
+                id: schema.submissions.id,
+                organizationId: schema.organizations.id,
+                journalId: schema.submissions.journalId,
+                organizationName: schema.organizations.name,
+                organizationSlug: schema.organizations.slug,
+                journalTitle: schema.journals.title,
+                journalSlug: schema.journals.slug,
+                title: schema.submissions.title,
+                abstract: schema.submissions.abstract,
+                keywords: schema.submissions.keywords,
+                status: schema.submissions.status,
+                createdBy: schema.submissions.createdBy,
+                createdAt: schema.submissions.createdAt,
+                updatedAt: schema.submissions.updatedAt,
+                submittedAt: schema.submissions.submittedAt,
+                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+                currentManuscriptVersion: sql<number>`(
+                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+                  FROM ${schema.submissionManuscripts}
+                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+                )`.as("currentManuscriptVersion"),
+              })
+              .from(schema.submissions)
+              .innerJoin(
+                schema.journals,
+                eq(schema.journals.id, schema.submissions.journalId),
+              )
+              .innerJoin(
+                schema.organizations,
+                eq(schema.organizations.id, schema.journals.organizationId),
+              );
+
+            if (!updated) {
+              throw new Error("Submission not found");
+            }
+
+            return mapSubmissionRow(updated);
+          },
+
+          async recordDecision(input: RecordDecisionInput) {
+            const { submissionId, editorUserId, outcome, rationale, reviewerRecommendations } = input;
+
+            let newStatus: "accepted" | "rejected" | "revision_requested";
+            if (outcome === "accept") newStatus = "accepted";
+            else if (outcome === "reject") newStatus = "rejected";
+            else newStatus = "revision_requested";
+
+            const now = new Date();
+            const [updated] = await tx
+              .update(schema.submissions)
+              .set({
+                status: newStatus,
+                updatedAt: now,
+                ...(outcome === "accept" ? { acceptedAt: now } : {}),
+                ...(outcome === "reject" ? { rejectedAt: now, rejectionReason: rationale } : {}),
+                ...(outcome === "minor_revision" || outcome === "major_revision"
+                  ? { revisionRequestedAt: now, revisionReason: rationale }
+                  : {}),
+              })
+              .where(eq(schema.submissions.id, submissionId))
+              .returning({
+                id: schema.submissions.id,
+              });
+
+            if (!updated) {
+              throw new Error("Submission not found");
+            }
+
+            const [decision] = await tx
+              .insert(schema.editorialDecisions)
+              .values({
+                submissionId,
+                editorUserId,
+                outcome,
+                rationale,
+                reviewerRecommendations: JSON.stringify(reviewerRecommendations),
+              })
+              .returning({
+                id: schema.editorialDecisions.id,
+                submissionId: schema.editorialDecisions.submissionId,
+                editorUserId: schema.editorialDecisions.editorUserId,
+                outcome: schema.editorialDecisions.outcome,
+                rationale: schema.editorialDecisions.rationale,
+                reviewerRecommendations: schema.editorialDecisions.reviewerRecommendations,
+                createdAt: schema.editorialDecisions.createdAt,
+                communicatedAt: schema.editorialDecisions.communicatedAt,
+              });
+
+            return mapDecisionRow(decision);
+          },
+
+          async withdrawSubmission(input: WithdrawSubmissionInput) {
+            const { submissionId, authorUserId, reason } = input;
+
+            const now = new Date();
+            const [updated] = await tx
+              .update(schema.submissions)
+              .set({
+                status: "withdrawn",
+                updatedAt: now,
+                withdrawnAt: now,
+                withdrawalReason: reason,
+              })
+              .where(
+                and(
+                  eq(schema.submissions.id, submissionId),
+                  eq(schema.submissions.createdBy, authorUserId),
+                ),
+              )
+              .returning({
+                id: schema.submissions.id,
+                organizationId: schema.organizations.id,
+                journalId: schema.submissions.journalId,
+                organizationName: schema.organizations.name,
+                organizationSlug: schema.organizations.slug,
+                journalTitle: schema.journals.title,
+                journalSlug: schema.journals.slug,
+                title: schema.submissions.title,
+                abstract: schema.submissions.abstract,
+                keywords: schema.submissions.keywords,
+                status: schema.submissions.status,
+                createdBy: schema.submissions.createdBy,
+                createdAt: schema.submissions.createdAt,
+                updatedAt: schema.submissions.updatedAt,
+                submittedAt: schema.submissions.submittedAt,
+                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+                currentManuscriptVersion: sql<number>`(
+                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+                  FROM ${schema.submissionManuscripts}
+                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+                )`.as("currentManuscriptVersion"),
+              })
+              .from(schema.submissions)
+              .innerJoin(
+                schema.journals,
+                eq(schema.journals.id, schema.submissions.journalId),
+              )
+              .innerJoin(
+                schema.organizations,
+                eq(schema.organizations.id, schema.journals.organizationId),
+              );
+
+            if (!updated) {
+              throw new Error("Submission not found or access denied");
+            }
+
+            return mapSubmissionRow(updated);
+          },
+
+          async insertAuditEvent(event) {
+            await tx.insert(schema.auditEvents).values(event);
+          },
+
+          async buildSubmissionDetail(submissionId: string, organizationId: string): Promise<EditorialSubmissionDetail | null> {
+            const submission = await tx
+              .select({
+                id: schema.submissions.id,
+                organizationId: schema.organizations.id,
+                journalId: schema.submissions.journalId,
+                organizationName: schema.organizations.name,
+                organizationSlug: schema.organizations.slug,
+                journalTitle: schema.journals.title,
+                journalSlug: schema.journals.slug,
+                title: schema.submissions.title,
+                abstract: schema.submissions.abstract,
+                keywords: schema.submissions.keywords,
+                status: schema.submissions.status,
+                createdBy: schema.submissions.createdBy,
+                createdAt: schema.submissions.createdAt,
+                updatedAt: schema.submissions.updatedAt,
+                submittedAt: schema.submissions.submittedAt,
+                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+                currentManuscriptVersion: sql<number>`(
+                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+                  FROM ${schema.submissionManuscripts}
+                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+                )`.as("currentManuscriptVersion"),
+              })
+              .from(schema.submissions)
+              .innerJoin(
+                schema.journals,
+                eq(schema.journals.id, schema.submissions.journalId),
+              )
+              .innerJoin(
+                schema.organizations,
+                eq(schema.organizations.id, schema.journals.organizationId),
+              )
+              .where(eq(schema.submissions.id, submissionId))
+              .limit(1);
+
+            if (!submission[0]) return null;
+
+            const [authors, manuscripts, assignments, reviews, decisions, auditEvents] = await Promise.all([
+              tx
+                .select({
+                  id: schema.submissionAuthors.id,
+                  userId: schema.submissionAuthors.userId,
+                  name: schema.submissionAuthors.name,
+                  email: schema.submissionAuthors.email,
+                  affiliation: schema.submissionAuthors.affiliation,
+                  orcid: schema.submissionAuthors.orcid,
+                  isCorresponding: schema.submissionAuthors.isCorresponding,
+                  order: schema.submissionAuthors.authorOrder,
+                })
+                .from(schema.submissionAuthors)
+                .where(eq(schema.submissionAuthors.submissionId, submissionId))
+                .orderBy(asc(schema.submissionAuthors.authorOrder)),
+              tx
+                .select({
+                  id: schema.submissionManuscripts.id,
+                  version: schema.submissionManuscripts.version,
+                  contentType: schema.submissionManuscripts.contentType,
+                  byteSize: schema.submissionManuscripts.byteSize,
+                  sha256: schema.submissionManuscripts.sha256,
+                  uploadedBy: schema.submissionManuscripts.uploadedBy,
+                  uploadedAt: schema.submissionManuscripts.uploadedAt,
+                })
+                .from(schema.submissionManuscripts)
+                .where(eq(schema.submissionManuscripts.submissionId, submissionId))
+                .orderBy(desc(schema.submissionManuscripts.version)),
+              tx
+                .select({
+                  id: schema.reviewerAssignments.id,
+                  submissionId: schema.reviewerAssignments.submissionId,
+                  reviewerUserId: schema.reviewerAssignments.reviewerUserId,
+                  role: schema.reviewerAssignments.role,
+                  assignedAt: schema.reviewerAssignments.assignedAt,
+                  assignedBy: schema.reviewerAssignments.assignedBy,
+                  dueAt: schema.reviewerAssignments.dueAt,
+                  completedAt: schema.reviewerAssignments.completedAt,
+                  unassignedAt: schema.reviewerAssignments.unassignedAt,
+                  unassignedBy: schema.reviewerAssignments.unassignedBy,
+                  unassignedReason: schema.reviewerAssignments.unassignedReason,
+                  isBlind: schema.reviewerAssignments.isBlind,
+                })
+                .from(schema.reviewerAssignments)
+                .where(eq(schema.reviewerAssignments.submissionId, submissionId))
+                .orderBy(desc(schema.reviewerAssignments.assignedAt)),
+              tx
+                .select({
+                  id: schema.reviewReports.id,
+                  assignmentId: schema.reviewReports.assignmentId,
+                  submissionId: schema.reviewReports.submissionId,
+                  reviewerUserId: schema.reviewReports.reviewerUserId,
+                  version: schema.reviewReports.version,
+                  recommendation: schema.reviewReports.recommendation,
+                  commentsToAuthor: schema.reviewReports.commentsToAuthor,
+                  commentsToEditor: schema.reviewReports.commentsToEditor,
+                  scores: schema.reviewReports.scores,
+                  submittedAt: schema.reviewReports.submittedAt,
+                  acknowledgedAt: schema.reviewReports.acknowledgedAt,
+                })
+                .from(schema.reviewReports)
+                .innerJoin(
+                  schema.reviewerAssignments,
+                  eq(schema.reviewerAssignments.id, schema.reviewReports.assignmentId),
+                )
+                .where(eq(schema.reviewerAssignments.submissionId, submissionId))
+                .orderBy(desc(schema.reviewReports.submittedAt)),
+              tx
+                .select({
+                  id: schema.editorialDecisions.id,
+                  submissionId: schema.editorialDecisions.submissionId,
+                  editorUserId: schema.editorialDecisions.editorUserId,
+                  outcome: schema.editorialDecisions.outcome,
+                  rationale: schema.editorialDecisions.rationale,
+                  reviewerRecommendations: schema.editorialDecisions.reviewerRecommendations,
+                  createdAt: schema.editorialDecisions.createdAt,
+                  communicatedAt: schema.editorialDecisions.communicatedAt,
+                })
+                .from(schema.editorialDecisions)
+                .where(eq(schema.editorialDecisions.submissionId, submissionId))
+                .orderBy(desc(schema.editorialDecisions.createdAt)),
+              tx
+                .select({
+                  id: schema.auditEvents.id,
+                  organizationId: schema.auditEvents.organizationId,
+                  action: schema.auditEvents.action,
+                  entityType: schema.auditEvents.entityType,
+                  entityId: schema.auditEvents.entityId,
+                  actorUserId: schema.auditEvents.actorUserId,
+                  actorLabel: schema.auditEvents.actorLabel,
+                  actorType: schema.auditEvents.actorType,
+                  reason: schema.auditEvents.reason,
+                  stateBefore: schema.auditEvents.stateBefore,
+                  stateAfter: schema.auditEvents.stateAfter,
+                  source: schema.auditEvents.source,
+                  correlationId: schema.auditEvents.correlationId,
+                  occurredAt: schema.auditEvents.occurredAt,
+                })
+                .from(schema.auditEvents)
+                .where(
+                  and(
+                    eq(schema.auditEvents.entityType, "submission"),
+                    eq(schema.auditEvents.entityId, submissionId),
+                  ),
+                )
+                .orderBy(desc(schema.auditEvents.occurredAt)),
+            ]);
+
+            return {
+              ...mapSubmissionRow(submission[0]),
+              authors: authors.map((a) => ({
+                id: a.id,
+                userId: a.userId,
+                name: a.name,
+                email: a.email,
+                affiliation: a.affiliation,
+                orcid: a.orcid,
+                isCorresponding: a.isCorresponding,
+                order: a.order,
+              })),
+              manuscripts: manuscripts.map((m) => ({
+                id: m.id,
+                version: m.version,
+                contentType: m.contentType,
+                byteSize: m.byteSize,
+                sha256: m.sha256,
+                uploadedBy: m.uploadedBy,
+                uploadedAt: m.uploadedAt,
+              })),
+              assignments: assignments.map(mapAssignmentRow),
+              reviews: reviews.map(mapReviewReportRow),
+              decisions: decisions.map(mapDecisionRow),
+              auditEvents: auditEvents.map((a) => ({
+                id: a.id,
+                organizationId: a.organizationId,
+                action: a.action,
+                entityType: a.entityType,
+                entityId: a.entityId,
+                actorUserId: a.actorUserId,
+                actorLabel: a.actorLabel,
+                actorType: a.actorType as "human" | "system" | "ai" | null,
+                reason: a.reason,
+                stateBefore: a.stateBefore,
+                stateAfter: a.stateAfter,
+                source: a.source,
+                correlationId: a.correlationId,
+                occurredAt: a.occurredAt,
+              })),
+            };
+          },
+        };
+
+        return work(transaction);
+      });
+    },
+
+    async findSubmissionForEditor(editorUserId, submissionId) {
+      return database.transaction(async (tx) => {
+        const rows = await tx
+          .select({
+            id: schema.submissions.id,
+            organizationId: schema.organizations.id,
+            journalId: schema.submissions.journalId,
+            organizationName: schema.organizations.name,
+            organizationSlug: schema.organizations.slug,
+            journalTitle: schema.journals.title,
+            journalSlug: schema.journals.slug,
+            title: schema.submissions.title,
+            abstract: schema.submissions.abstract,
+            keywords: schema.submissions.keywords,
+            status: schema.submissions.status,
+            createdBy: schema.submissions.createdBy,
+            createdAt: schema.submissions.createdAt,
+            updatedAt: schema.submissions.updatedAt,
+            submittedAt: schema.submissions.submittedAt,
+            submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+            currentManuscriptVersion: sql<number>`(
+              SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+              FROM ${schema.submissionManuscripts}
+              WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+            )`.as("currentManuscriptVersion"),
+          })
+          .from(schema.submissions)
+          .innerJoin(
+            schema.journals,
+            eq(schema.journals.id, schema.submissions.journalId),
+          )
+          .innerJoin(
+            schema.organizations,
+            eq(schema.organizations.id, schema.journals.organizationId),
+          )
+          .innerJoin(
+            schema.organizationMemberships,
+            and(
+              eq(schema.organizationMemberships.organizationId, schema.organizations.id),
+              eq(schema.organizationMemberships.userId, editorUserId),
+              eq(schema.organizationMemberships.role, "organization_admin"),
+            ),
+          )
+          .where(eq(schema.submissions.id, submissionId))
+          .limit(1);
+
+        return rows[0] ? mapSubmissionRow(rows[0]) : null;
+      });
+    },
+
+    async listSubmissionsForEditor(editorUserId, journalId, statuses) {
+      return database.transaction(async (tx) => {
+        const conditions = [
+          eq(schema.journals.id, journalId),
+          eq(schema.organizationMemberships.userId, editorUserId),
+          eq(schema.organizationMemberships.role, "organization_admin"),
+        ];
+
+        if (statuses && statuses.length > 0) {
+          conditions.push(inArray(schema.submissions.status, statuses));
+        }
+
+        const rows = await tx
+          .select({
+            id: schema.submissions.id,
+            organizationId: schema.organizations.id,
+            journalId: schema.submissions.journalId,
+            organizationName: schema.organizations.name,
+            organizationSlug: schema.organizations.slug,
+            journalTitle: schema.journals.title,
+            journalSlug: schema.journals.slug,
+            title: schema.submissions.title,
+            abstract: schema.submissions.abstract,
+            keywords: schema.submissions.keywords,
+            status: schema.submissions.status,
+            createdBy: schema.submissions.createdBy,
+            createdAt: schema.submissions.createdAt,
+            updatedAt: schema.submissions.updatedAt,
+            submittedAt: schema.submissions.submittedAt,
+            submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+            currentManuscriptVersion: sql<number>`(
+              SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+              FROM ${schema.submissionManuscripts}
+              WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+            )`.as("currentManuscriptVersion"),
+          })
+          .from(schema.submissions)
+          .innerJoin(
+            schema.journals,
+            eq(schema.journals.id, schema.submissions.journalId),
+          )
+          .innerJoin(
+            schema.organizations,
+            eq(schema.organizations.id, schema.journals.organizationId),
+          )
+          .innerJoin(
+            schema.organizationMemberships,
+            and(
+              eq(schema.organizationMemberships.organizationId, schema.organizations.id),
+              eq(schema.organizationMemberships.userId, editorUserId),
+              eq(schema.organizationMemberships.role, "organization_admin"),
+            ),
+          )
+          .where(and(...conditions))
+          .orderBy(desc(schema.submissions.updatedAt));
+
+        return rows.map(mapSubmissionRow);
+      });
+    },
+
+    async getSubmissionDetailForEditor(editorUserId, submissionId) {
+      return database.transaction(async (tx) => {
+        const submission = await this.findSubmissionForEditor(editorUserId, submissionId);
+        if (!submission) return null;
+
+        // We need to run the detailed query inside the same transaction
+        // For now, we'll do a separate query - in production this should be optimized
+        const detail = await buildSubmissionDetail(database, submissionId, submission.organizationId);
+        return detail;
+      });
+    },
+
+    async getSubmissionDetailForReviewer(reviewerUserId, submissionId) {
+      return database.transaction(async (tx) => {
+        const assignment = await tx
+          .select({ id: schema.reviewerAssignments.id })
+          .from(schema.reviewerAssignments)
+          .where(
+            and(
+              eq(schema.reviewerAssignments.reviewerUserId, reviewerUserId),
+              eq(schema.reviewerAssignments.submissionId, submissionId),
+            ),
+          )
+          .limit(1);
+
+        if (!assignment[0]) return null;
+
+        const submission = await tx
+          .select({
+            id: schema.submissions.id,
+            organizationId: schema.organizations.id,
+            journalId: schema.submissions.journalId,
+            organizationName: schema.organizations.name,
+            organizationSlug: schema.organizations.slug,
+            journalTitle: schema.journals.title,
+            journalSlug: schema.journals.slug,
+            title: schema.submissions.title,
+            abstract: schema.submissions.abstract,
+            keywords: schema.submissions.keywords,
+            status: schema.submissions.status,
+            createdBy: schema.submissions.createdBy,
+            createdAt: schema.submissions.createdAt,
+            updatedAt: schema.submissions.updatedAt,
+            submittedAt: schema.submissions.submittedAt,
+            submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+            currentManuscriptVersion: sql<number>`(
+              SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+              FROM ${schema.submissionManuscripts}
+              WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+            )`.as("currentManuscriptVersion"),
+          })
+          .from(schema.submissions)
+          .innerJoin(
+            schema.journals,
+            eq(schema.journals.id, schema.submissions.journalId),
+          )
+          .innerJoin(
+            schema.organizations,
+            eq(schema.organizations.id, schema.journals.organizationId),
+          )
+          .where(eq(schema.submissions.id, submissionId))
+          .limit(1);
+
+        if (!submission[0]) return null;
+
+        return buildSubmissionDetail(database, submission[0].id, submission[0].organizationId);
+      });
+    },
+  };
+}
+
+async function buildSubmissionDetail(
+  database: PgDatabase<any, typeof schema>,
+  submissionId: string,
+  organizationId: string
+): Promise<EditorialSubmissionDetail | null> {
+  const submission = await database
+    .select({
+      id: schema.submissions.id,
+      organizationId: schema.organizations.id,
+      journalId: schema.submissions.journalId,
+      organizationName: schema.organizations.name,
+      organizationSlug: schema.organizations.slug,
+      journalTitle: schema.journals.title,
+      journalSlug: schema.journals.slug,
+      title: schema.submissions.title,
+      abstract: schema.submissions.abstract,
+      keywords: schema.submissions.keywords,
+      status: schema.submissions.status,
+      createdBy: schema.submissions.createdBy,
+      createdAt: schema.submissions.createdAt,
+      updatedAt: schema.submissions.updatedAt,
+      submittedAt: schema.submissions.submittedAt,
+      submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+      currentManuscriptVersion: sql<number>`(
+        SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+        FROM ${schema.submissionManuscripts}
+        WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+      )`.as("currentManuscriptVersion"),
+    })
+    .from(schema.submissions)
+    .innerJoin(
+      schema.journals,
+      eq(schema.journals.id, schema.submissions.journalId),
+    )
+    .innerJoin(
+      schema.organizations,
+      eq(schema.organizations.id, schema.journals.organizationId),
+    )
+    .where(eq(schema.submissions.id, submissionId))
+    .limit(1);
+
+  if (!submission[0]) return null;
+
+  const [authors, manuscripts, assignments, reviews, decisions, auditEvents] = await Promise.all([
+    database
+      .select({
+        id: schema.submissionAuthors.id,
+        userId: schema.submissionAuthors.userId,
+        name: schema.submissionAuthors.name,
+        email: schema.submissionAuthors.email,
+        affiliation: schema.submissionAuthors.affiliation,
+        orcid: schema.submissionAuthors.orcid,
+        isCorresponding: schema.submissionAuthors.isCorresponding,
+        order: schema.submissionAuthors.authorOrder,
+      })
+      .from(schema.submissionAuthors)
+      .where(eq(schema.submissionAuthors.submissionId, submissionId))
+      .orderBy(asc(schema.submissionAuthors.authorOrder)),
+    database
+      .select({
+        id: schema.submissionManuscripts.id,
+        version: schema.submissionManuscripts.version,
+        contentType: schema.submissionManuscripts.contentType,
+        byteSize: schema.submissionManuscripts.byteSize,
+        sha256: schema.submissionManuscripts.sha256,
+        uploadedBy: schema.submissionManuscripts.uploadedBy,
+        uploadedAt: schema.submissionManuscripts.uploadedAt,
+      })
+      .from(schema.submissionManuscripts)
+      .where(eq(schema.submissionManuscripts.submissionId, submissionId))
+      .orderBy(desc(schema.submissionManuscripts.version)),
+    database
+      .select({
+        id: schema.reviewerAssignments.id,
+        submissionId: schema.reviewerAssignments.submissionId,
+        reviewerUserId: schema.reviewerAssignments.reviewerUserId,
+        role: schema.reviewerAssignments.role,
+        assignedAt: schema.reviewerAssignments.assignedAt,
+        assignedBy: schema.reviewerAssignments.assignedBy,
+        dueAt: schema.reviewerAssignments.dueAt,
+        completedAt: schema.reviewerAssignments.completedAt,
+        unassignedAt: schema.reviewerAssignments.unassignedAt,
+        unassignedBy: schema.reviewerAssignments.unassignedBy,
+        unassignedReason: schema.reviewerAssignments.unassignedReason,
+        isBlind: schema.reviewerAssignments.isBlind,
+      })
+      .from(schema.reviewerAssignments)
+      .where(eq(schema.reviewerAssignments.submissionId, submissionId))
+      .orderBy(desc(schema.reviewerAssignments.assignedAt)),
+    database
+      .select({
+        id: schema.reviewReports.id,
+        assignmentId: schema.reviewReports.assignmentId,
+        submissionId: schema.reviewReports.submissionId,
+        reviewerUserId: schema.reviewReports.reviewerUserId,
+        version: schema.reviewReports.version,
+        recommendation: schema.reviewReports.recommendation,
+        commentsToAuthor: schema.reviewReports.commentsToAuthor,
+        commentsToEditor: schema.reviewReports.commentsToEditor,
+        scores: schema.reviewReports.scores,
+        submittedAt: schema.reviewReports.submittedAt,
+        acknowledgedAt: schema.reviewReports.acknowledgedAt,
+      })
+      .from(schema.reviewReports)
+      .innerJoin(
+        schema.reviewerAssignments,
+        eq(schema.reviewerAssignments.id, schema.reviewReports.assignmentId),
+      )
+      .where(eq(schema.reviewerAssignments.submissionId, submissionId))
+      .orderBy(desc(schema.reviewReports.submittedAt)),
+    database
+      .select({
+        id: schema.editorialDecisions.id,
+        submissionId: schema.editorialDecisions.submissionId,
+        editorUserId: schema.editorialDecisions.editorUserId,
+        outcome: schema.editorialDecisions.outcome,
+        rationale: schema.editorialDecisions.rationale,
+        reviewerRecommendations: schema.editorialDecisions.reviewerRecommendations,
+        createdAt: schema.editorialDecisions.createdAt,
+        communicatedAt: schema.editorialDecisions.communicatedAt,
+      })
+      .from(schema.editorialDecisions)
+      .where(eq(schema.editorialDecisions.submissionId, submissionId))
+      .orderBy(desc(schema.editorialDecisions.createdAt)),
+    database
+      .select({
+        id: schema.auditEvents.id,
+        organizationId: schema.auditEvents.organizationId,
+        action: schema.auditEvents.action,
+        entityType: schema.auditEvents.entityType,
+        entityId: schema.auditEvents.entityId,
+        actorUserId: schema.auditEvents.actorUserId,
+        actorLabel: schema.auditEvents.actorLabel,
+        actorType: schema.auditEvents.actorType,
+        reason: schema.auditEvents.reason,
+        stateBefore: schema.auditEvents.stateBefore,
+        stateAfter: schema.auditEvents.stateAfter,
+        source: schema.auditEvents.source,
+        correlationId: schema.auditEvents.correlationId,
+        occurredAt: schema.auditEvents.occurredAt,
+      })
+      .from(schema.auditEvents)
+      .where(
+        and(
+          eq(schema.auditEvents.entityType, "submission"),
+          eq(schema.auditEvents.entityId, submissionId),
+        ),
+      )
+      .orderBy(desc(schema.auditEvents.occurredAt)),
+  ]);
+
+  return {
+    ...mapSubmissionRow(submission[0]),
+    authors: authors.map((a) => ({
+      id: a.id,
+      userId: a.userId,
+      name: a.name,
+      email: a.email,
+      affiliation: a.affiliation,
+      orcid: a.orcid,
+      isCorresponding: a.isCorresponding,
+      order: a.order,
+    })),
+    manuscripts: manuscripts.map((m) => ({
+      id: m.id,
+      version: m.version,
+      contentType: m.contentType,
+      byteSize: m.byteSize,
+      sha256: m.sha256,
+      uploadedBy: m.uploadedBy,
+      uploadedAt: m.uploadedAt,
+    })),
+    assignments: assignments.map(mapAssignmentRow),
+    reviews: reviews.map(mapReviewReportRow),
+    decisions: decisions.map(mapDecisionRow),
+    auditEvents: auditEvents.map((a) => ({
+      id: a.id,
+      organizationId: a.organizationId,
+      action: a.action,
+      entityType: a.entityType,
+      entityId: a.entityId,
+      actorUserId: a.actorUserId,
+      actorLabel: a.actorLabel,
+      actorType: a.actorType as "human" | "system" | "ai" | null,
+      reason: a.reason,
+      stateBefore: a.stateBefore,
+      stateAfter: a.stateAfter,
+      source: a.source,
+      correlationId: a.correlationId,
+      occurredAt: a.occurredAt,
+    })),
+  };
+}
+
+function mapAssignmentRow(row: any): ReviewerAssignment {
+  return {
+    id: row.id,
+    submissionId: row.submissionId,
+    reviewerUserId: row.reviewerUserId,
+    role: row.role,
+    assignedAt: row.assignedAt,
+    assignedBy: row.assignedBy,
+    dueAt: row.dueAt,
+    completedAt: row.completedAt,
+    unassignedAt: row.unassignedAt,
+    unassignedBy: row.unassignedBy,
+    unassignedReason: row.unassignedReason,
+    isBlind: row.isBlind,
+  };
+}
+
+function mapReviewReportRow(row: any): ReviewReport {
+  return {
+    id: row.id,
+    assignmentId: row.assignmentId,
+    submissionId: row.submissionId,
+    reviewerUserId: row.reviewerUserId,
+    version: row.version,
+    recommendation: row.recommendation,
+    commentsToAuthor: row.commentsToAuthor,
+    commentsToEditor: row.commentsToEditor,
+    scores: row.scores ? JSON.parse(row.scores) : null,
+    submittedAt: row.submittedAt,
+    acknowledgedAt: row.acknowledgedAt,
+  };
+}
+
+function mapDecisionRow(row: any): EditorialDecision {
+  return {
+    id: row.id,
+    submissionId: row.submissionId,
+    editorUserId: row.editorUserId,
+    outcome: row.outcome,
+    rationale: row.rationale,
+    reviewerRecommendations: row.reviewerRecommendations ? JSON.parse(row.reviewerRecommendations) : [],
+    createdAt: row.createdAt,
+    communicatedAt: row.communicatedAt,
+  };
+}

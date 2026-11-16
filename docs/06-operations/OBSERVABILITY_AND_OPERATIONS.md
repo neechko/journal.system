@@ -1,6 +1,7 @@
 # Observability and Operations
 
 **Status:** Proposed baseline
+**Last reviewed:** 2026-11-15
 
 ## 1. Observability
 
@@ -32,7 +33,15 @@
 - Maintain rollback/forward-fix plan for each risky release.
 - Never point agent/test environments at production by default.
 
-## 5. Operational runbooks to add
+## 5. Continuous integration
+
+The GitHub Actions workflow at `.github/workflows/web-quality.yml` runs the web
+application's lint, type-check, PGlite-backed tests, and production build on
+pushes, pull requests, and manual dispatch. It uses read-only repository
+permissions and does not require production credentials or an external
+database.
+
+## 6. Operational runbooks to add
 
 - Database unavailable.
 - Queue backlog / worker stalled.

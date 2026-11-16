@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "skills": {
+    "awwwards": {
+      "source": "juliobsz/skills",
+      "commit": "add880bd6ec9f5592a1482846fc0dd282c9161bc",
+      "sourceType": "github",
+      "skillPath": "awwwards/SKILL.md",
+      "computedHash": "a4a0f05304622ed953bb28cc4713b66f9582265834fdd468b1bdff2ddfb07d82"
+    },
+    "jury": {
+      "source": "juliobsz/skills",
+      "commit": "add880bd6ec9f5592a1482846fc0dd282c9161bc",
+      "sourceType": "github",
+      "skillPath": "jury/SKILL.md",
+      "computedHash": "4d2a744cb7ce6d06b7f657dd95ccbd5bb041c63829b19f54de0ac886fbe7a5bf"
+    }
+  }
+}

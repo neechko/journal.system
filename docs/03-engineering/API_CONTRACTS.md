@@ -36,3 +36,52 @@
 | Search engine | Discovery | Projection dapat dibangun ulang dari primary data |
 
 Jangan menyatakan integrasi aktif hanya karena field atau tombol UI sudah ada.
+
+## 5. Development-only manuscript attachment slice
+
+The current author draft prototype accepts versioned PDF attachments through an
+authenticated Server Action and streams downloads through an owner-scoped
+Route Handler. Each request resolves the author from the server session; client
+organization, author, and storage identifiers are not trusted for access
+control. The supported file is PDF only, limited to 10 MB, with extension,
+declared MIME type, file signature, and SHA-256 integrity checks. Original file
+names are not retained.
+
+For local synthetic-data testing only, an explicit environment opt-in stores
+files outside `public` on local disk. The adapter is unencrypted, has no malware
+scanner or rate limiter, and is always disabled in production. Do not upload
+real or confidential manuscripts. This prototype does not implement final
+review access, production object storage, retention/deletion policy, or malware
+scanning; those remain prerequisites for real manuscript use.
+
+## 6. Author submission transition
+
+The author workspace supports one guarded transition, `draft` → `submitted`.
+The server checks ownership, a present and integrity-verified latest PDF, an
+explicit author confirmation, and local private storage availability. The
+transition and its audit event commit atomically; the event records the prior
+and resulting states, human actor, source, reason, tenant, timestamp, and a
+server-generated correlation ID. Repeated or stale transitions do not create
+another transition event. The exact submitted manuscript version is stored
+with the submission for provenance. Submitted metadata and manuscript versions
+are read-only to the author; intake screening, editorial assignment, reviewer
+access, and editorial decisions remain unimplemented.
+
+The current author draft prototype includes an optional structured keyword list
+entered one per line. The application trims entries and ignores blank lines; it
+accepts up to 20 keywords, each no longer than 100 characters. Keywords remain
+private to the author under the existing owner-scoped submission queries and
+become read-only when the author submits.
+
+## 7. Journal public profile updates
+
+An organization admin can update a journal's public description, aims and scope,
+and author guidelines through the authenticated journal workspace. The server
+validates the input, checks the actor's organization scope, and writes the
+profile change and audit event in one transaction. Each update requires an
+explicit confirmation and audit reason. Blank fields are stored as `null`;
+description is limited to 2,000 characters. Updates to a published journal
+appear on its public profile and directory after revalidation. This action does
+not change the journal title, slug, or publication state.
+
+**Last reviewed:** 2026-11-15

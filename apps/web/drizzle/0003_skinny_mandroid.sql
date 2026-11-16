@@ -1,0 +1,1 @@
+ALTER TABLE "audit_event" ADD CONSTRAINT "audit_event_actor_present" CHECK ("audit_event"."actor_user_id" is not null or nullif("audit_event"."actor_label", '') is not null);

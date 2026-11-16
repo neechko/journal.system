@@ -7,5 +7,6 @@
 | ADR-0003 | PostgreSQL sebagai primary transactional database | Proposed | 2026-11-14 | — |
 | ADR-0004 | Tenant hierarchy organization → journal | Proposed | 2026-11-14 | — |
 | ADR-0005 | Structured article content + JATS interoperability | Proposed | 2026-11-14 | — |
+| ADR-0006 | Fondasi vertical slice organization dan journal | Proposed | 2026-11-14 | — |
 
 Tambahkan baris ketika ADR dibuat. Jangan mengubah status tanpa catatan pada ADR terkait.
