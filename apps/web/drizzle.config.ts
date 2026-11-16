@@ -8,6 +8,6 @@ export default defineConfig({
   schema: "./src/server/db/schema.ts",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://localhost:5432/journal_system",
+    url: process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgres://localhost:5432/journal_system",
   },
 });

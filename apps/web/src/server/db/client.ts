@@ -8,7 +8,7 @@ import * as schema from "./schema";
 let client: ReturnType<typeof postgres> | undefined;
 
 export function getDatabase() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL;
 
   if (!connectionString) {
     throw new AppError(
