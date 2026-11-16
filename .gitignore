@@ -2,6 +2,14 @@
 node_modules/
 **/opencode.json
 
+# Test/debug scripts (local only)
+apps/web/test-*.ts
+apps/web/verify-*.ts
+apps/web/check-*.ts
+apps/web/update-*.ts
+apps/web/scripts/seed-journals.mjs
+apps/web/lint.txt
+
 # Next.js
 **/.next/
 **/out/
