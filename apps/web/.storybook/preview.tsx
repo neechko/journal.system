@@ -1,5 +1,14 @@
-import type { Preview } from '@storybook/react';
+import type { Preview, Decorator } from '@storybook/react';
 import '../src/app/globals.css';
+
+const withTheme: Decorator = (Story, context) => {
+  const theme = context.globals.theme;
+  return (
+    <div data-theme={theme} className="storybook-wrapper">
+      <Story {...context} />
+    </div>
+  );
+};
 
 const preview: Preview = {
   parameters: {
@@ -32,16 +41,7 @@ const preview: Preview = {
       },
     },
   },
-  decorators: [
-    (Story, context) => {
-      const theme = context.globals.theme;
-      return (
-        <div data-theme={theme} className="storybook-wrapper">
-          <Story />
-        </div>
-      );
-    },
-  ],
+  decorators: [withTheme],
 };
 
 export default preview;
