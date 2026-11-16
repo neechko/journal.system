@@ -89,7 +89,7 @@ export default async function ArticlePage({ params }: PageProps) {
   }).format(article.publishedAt!);
 
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
       <PublicSiteHeader />
       <article className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">

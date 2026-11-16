@@ -64,7 +64,7 @@ export default async function StartSubmissionDraftPage({
   }
 
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
       <PublicSiteHeader />
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">

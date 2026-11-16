@@ -7,6 +7,25 @@
 @import 'tailwindcss';
 
 /* ============================================
+   Tailwind v4 Theme — Custom Colors used in App
+   ============================================ */
+@theme {
+  /* Base semantic colors (mapped to design tokens) */
+  --color-paper: var(--color-background-primary);
+  --color-paper-deep: var(--color-background-secondary);
+  --color-ink: var(--color-text-primary);
+  --color-muted: var(--color-text-secondary);
+  --color-line: var(--color-border-primary);
+
+  /* Brand colors */
+  --color-forest: var(--color-brand-primary);
+  --color-forest-deep: var(--color-brand-primary-hover);
+  --color-lime: var(--color-status-success);
+  --color-coral: var(--color-status-error);
+  --color-white: var(--color-text-inverse);
+}
+
+/* ============================================
    CSS Custom Properties — Design Tokens
    ============================================ */
 

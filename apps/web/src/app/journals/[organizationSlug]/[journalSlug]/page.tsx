@@ -124,7 +124,7 @@ export default async function PublicJournalPage({
   }
 
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main className="min-h-screen bg-paper text-ink" data-journal={journal.slug}>
       <PublicSiteHeader />
       <nav
         aria-label="Breadcrumb"
