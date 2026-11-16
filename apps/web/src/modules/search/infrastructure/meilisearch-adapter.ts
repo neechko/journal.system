@@ -3,7 +3,8 @@ import "server-only";
 import { AppError } from "@/modules/shared/app-error";
 import type {
   SearchIndex,
-  SearchDocument,
+  SearchDocumentJournal,
+  SearchDocumentArticle,
   SearchResult,
   SearchOptions,
 } from "../application/ports";
@@ -92,11 +93,11 @@ export class MeilisearchAdapter implements SearchIndex {
     }
   }
 
-  async indexJournal(document: SearchDocument.Journal): Promise<void> {
+  async indexJournal(document: SearchDocumentJournal): Promise<void> {
     await this.client.index(JOURNALS_INDEX).addDocuments([document]);
   }
 
-  async indexArticle(document: SearchDocument.Article): Promise<void> {
+  async indexArticle(document: SearchDocumentArticle): Promise<void> {
     await this.client.index(ARTICLES_INDEX).addDocuments([document]);
   }
 
@@ -111,7 +112,7 @@ export class MeilisearchAdapter implements SearchIndex {
   async searchJournals(
     query: string,
     options: SearchOptions = {}
-  ): Promise<SearchResult<SearchDocument.Journal>> {
+  ): Promise<SearchResult<SearchDocumentJournal>> {
     const { offset = 0, limit = 20, filters, sort } = options;
 
     const searchParams: Record<string, unknown> = {
@@ -137,7 +138,7 @@ export class MeilisearchAdapter implements SearchIndex {
       searchParams.sort = [sort];
     }
 
-    const result = await this.client.index(JOURNALS_INDEX).search<SearchDocument.Journal>(query, searchParams);
+    const result = await this.client.index(JOURNALS_INDEX).search<SearchDocumentJournal>(query, searchParams);
 
     return {
       hits: result.hits,
@@ -151,7 +152,7 @@ export class MeilisearchAdapter implements SearchIndex {
   async searchArticles(
     query: string,
     options: SearchOptions = {}
-  ): Promise<SearchResult<SearchDocument.Article>> {
+  ): Promise<SearchResult<SearchDocumentArticle>> {
     const { offset = 0, limit = 20, filters, sort } = options;
 
     const searchParams: Record<string, unknown> = {
@@ -180,7 +181,7 @@ export class MeilisearchAdapter implements SearchIndex {
       searchParams.sort = [sort];
     }
 
-    const result = await this.client.index(ARTICLES_INDEX).search<SearchDocument.Article>(query, searchParams);
+    const result = await this.client.index(ARTICLES_INDEX).search<SearchDocumentArticle>(query, searchParams);
 
     return {
       hits: result.hits,

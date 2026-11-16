@@ -16,6 +16,15 @@ const config: StorybookConfig = {
   },
   staticDirs: ['../public'],
   viteFinal: async (config) => {
+    // Set higher esbuild target to support modern JS features (destructuring, etc.)
+    config.esbuild = {
+      ...config.esbuild,
+      target: 'es2022',
+    };
+    // Also set build target for storybook build
+    if (config.build) {
+      config.build.target = 'es2022';
+    }
     return config;
   },
 };

@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { InferSelectModel } from "drizzle-orm";
 import * as schema from "@/server/db/schema";
 import type {
   EditorialRepository,
@@ -22,7 +23,27 @@ import type {
 } from "../application/ports";
 import type { SubmissionStatus } from "../domain/state-machine";
 
-function mapSubmissionRow(row: any): EditorialSubmission {
+type SubmissionRow = {
+  id: string;
+  organizationId: string;
+  journalId: string;
+  organizationName: string;
+  organizationSlug: string;
+  journalTitle: string;
+  journalSlug: string;
+  title: string;
+  abstract: string | null;
+  keywords: string[];
+  status: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  submittedAt: Date | null;
+  submittedManuscriptVersion: number | null;
+  currentManuscriptVersion: number;
+};
+
+function mapSubmissionRow(row: SubmissionRow): EditorialSubmission {
   return {
     id: row.id,
     organizationId: row.organizationId,
@@ -951,7 +972,7 @@ export function createPostgresEditorialRepository<
 }
 
 async function buildSubmissionDetail(
-  database: PgDatabase<any, typeof schema>,
+  database: PgDatabase<PgQueryResultHKT, typeof schema>,
   submissionId: string,
   organizationId: string
 ): Promise<EditorialSubmissionDetail | null> {
@@ -1144,7 +1165,9 @@ async function buildSubmissionDetail(
   };
 }
 
-function mapAssignmentRow(row: any): ReviewerAssignment {
+type AssignmentRow = InferSelectModel<typeof schema.reviewerAssignments>;
+
+function mapAssignmentRow(row: AssignmentRow): ReviewerAssignment {
   return {
     id: row.id,
     submissionId: row.submissionId,
@@ -1161,7 +1184,9 @@ function mapAssignmentRow(row: any): ReviewerAssignment {
   };
 }
 
-function mapReviewReportRow(row: any): ReviewReport {
+type ReviewReportRow = InferSelectModel<typeof schema.reviewReports>;
+
+function mapReviewReportRow(row: ReviewReportRow): ReviewReport {
   return {
     id: row.id,
     assignmentId: row.assignmentId,
@@ -1171,20 +1196,22 @@ function mapReviewReportRow(row: any): ReviewReport {
     recommendation: row.recommendation,
     commentsToAuthor: row.commentsToAuthor,
     commentsToEditor: row.commentsToEditor,
-    scores: row.scores ? JSON.parse(row.scores) : null,
+    scores: row.scores ? JSON.parse(row.scores as string) : null,
     submittedAt: row.submittedAt,
     acknowledgedAt: row.acknowledgedAt,
   };
 }
 
-function mapDecisionRow(row: any): EditorialDecision {
+type DecisionRow = InferSelectModel<typeof schema.editorialDecisions>;
+
+function mapDecisionRow(row: DecisionRow): EditorialDecision {
   return {
     id: row.id,
     submissionId: row.submissionId,
     editorUserId: row.editorUserId,
     outcome: row.outcome,
     rationale: row.rationale,
-    reviewerRecommendations: row.reviewerRecommendations ? JSON.parse(row.reviewerRecommendations) : [],
+    reviewerRecommendations: row.reviewerRecommendations ? JSON.parse(row.reviewerRecommendations as string) : [],
     createdAt: row.createdAt,
     communicatedAt: row.communicatedAt,
   };

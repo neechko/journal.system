@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { InferSelectModel } from "drizzle-orm";
 import * as schema from "@/server/db/schema";
 import type {
   ProductionRepository,
@@ -1056,7 +1057,9 @@ export function createPostgresProductionRepository<
   };
 }
 
-function mapArticleVersionRow(row: any): ArticleVersion {
+type ArticleVersionRow = InferSelectModel<typeof schema.articleVersions>;
+
+function mapArticleVersionRow(row: ArticleVersionRow): ArticleVersion {
   return {
     id: row.id,
     submissionId: row.submissionId,
@@ -1065,7 +1068,7 @@ function mapArticleVersionRow(row: any): ArticleVersion {
     title: row.title,
     abstract: row.abstract,
     keywords: row.keywords,
-    authors: row.authors ? JSON.parse(row.authors) : [],
+    authors: row.authors ? JSON.parse(row.authors as string) : [],
     doi: row.doi,
     manuscriptFileId: row.manuscriptFileId,
     xmlContent: row.xmlContent,
@@ -1078,7 +1081,9 @@ function mapArticleVersionRow(row: any): ArticleVersion {
   };
 }
 
-function mapVolumeRow(row: any): Volume {
+type VolumeRow = InferSelectModel<typeof schema.volumes>;
+
+function mapVolumeRow(row: VolumeRow): Volume {
   return {
     id: row.id,
     journalId: row.journalId,
@@ -1090,7 +1095,9 @@ function mapVolumeRow(row: any): Volume {
   };
 }
 
-function mapIssueRow(row: any): Issue {
+type IssueRow = InferSelectModel<typeof schema.issues>;
+
+function mapIssueRow(row: IssueRow): Issue {
   return {
     id: row.id,
     journalId: row.journalId,
