@@ -48,6 +48,13 @@ sebelum merge ke `main`, termasuk dampak pada data lama dan rencana pemulihan.
 `db-migrate.yml` hanya dapat dijalankan manual untuk perbaikan operasional;
 workflow itu tidak lagi berpacu dengan deploy pada setiap push.
 
+Vercel project memakai Root Directory `apps/web`. Perintah `vercel pull`,
+`vercel build`, dan `vercel deploy --prebuilt` dalam GitHub Actions dijalankan
+dari root repository agar CLI tidak mencoba `apps/web/apps/web`. Perintah npm
+untuk aplikasi tetap berjalan dari `apps/web`. Preview PR harus berhasil sebelum
+merge; perubahan `.env.local` tidak mengubah GitHub Actions Secrets atau
+environment variables di Vercel secara otomatis.
+
 ## 6. Operational runbooks to add
 
 - Database unavailable.

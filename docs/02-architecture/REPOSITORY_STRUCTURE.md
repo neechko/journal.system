@@ -2,33 +2,20 @@
 
 **Status:** Proposed baseline; evolve only with a clear reason.
 
-## 1. Suggested initial layout
+## 1. Current layout and extraction boundary
 
 ```text
 .
-├── apps/
-│   ├── web/                         # Next.js App Router web application
-│   │   └── src/
-│   │       ├── app/                 # Route segments, layouts, pages, route handlers
-│   │       ├── components/          # Shared presentation components
-│   │       ├── modules/             # UI adapters per domain; no hidden business rules
-│   │       └── server/              # Composition root and server-only wiring
-│   └── worker/                      # Background worker entrypoint (add when needed)
-├── packages/
-│   ├── domain/                      # Pure domain model and policies (add when needed)
-│   ├── application/                 # Use cases and ports (add when needed)
-│   ├── infrastructure/              # DB, storage, queue and external adapters
-│   ├── contracts/                   # Runtime schemas and public DTOs
-│   ├── ui/                          # Design system (if shared across apps)
-│   └── config/                      # Shared lint/tsconfig/tooling (only if useful)
-├── docs/
-├── .github/
-├── .cursor/
-├── AGENTS.md
-├── CLAUDE.md
-├── package.json
-├── pnpm-workspace.yaml
-└── pnpm-lock.yaml
+├── apps/web/                        # Next.js App Router deployable
+│   ├── src/app/                     # HTTP and page adapters
+│   ├── src/modules/                 # Domain, use cases, ports, adapters
+│   ├── src/components/              # Shared page presentation
+│   ├── src/design-system/           # Theme, tokens, and component exploration
+│   └── drizzle/                     # Ordered SQL migrations and snapshots
+├── docs/                            # Product, domain, engineering, security, operations
+├── .github/workflows/               # CI, preview, production release
+├── AGENTS.md                        # Repository instructions
+└── package.json                     # Thin root command aliases
 ```
 
 ## 2. Avoid premature package creation

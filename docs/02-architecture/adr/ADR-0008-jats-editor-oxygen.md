@@ -1,4 +1,4 @@
-# ADR 0002: JATS XML Editor — oXygen Web Author
+# ADR-0008: JATS XML Editor — oXygen Web Author
 
 ## Status
 Accepted

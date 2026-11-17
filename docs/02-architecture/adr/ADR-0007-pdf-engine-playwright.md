@@ -1,4 +1,4 @@
-# ADR 0001: PDF Generation Engine — Playwright + typeset.sh
+# ADR-0007: PDF Generation Engine — Playwright + typeset.sh
 
 ## Status
 Accepted

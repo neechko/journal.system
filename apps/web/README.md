@@ -91,8 +91,9 @@ PostgreSQL adapter.
   published changes are visible immediately.
 - The `/journals` directory and public journal lookup return only records with
   `published_at` set. The directory searches journal title, organization name,
-  and description, and shows 12 journals per page; article archives are not
-  implemented. Public journal pages derive their
+  and description, and shows 12 journals per page. Published issue and article
+  pages have read-only routes, but their metadata and structured content still
+  need publication workflow and accessibility verification. Public journal pages derive their
   title, description, and Open Graph metadata from published journal data;
   canonical host/domain policy remains undecided.
 - The home page highlights up to three recently published journals from the
@@ -111,7 +112,9 @@ PostgreSQL adapter.
   adapter or retention policy is configured. The signed-in account is the only
   author identity currently recorded; co-author and affiliation metadata,
   editorial screening, review, article publication, membership management, and
-  production bootstrap are not implemented.
+  production bootstrap are not complete end-to-end user flows. Some domain
+  use cases and read-only publication routes exist; editor and production
+  queues remain placeholders.
 - Authors can submit an owned draft after attaching a stored manuscript PDF.
   The `draft` → `submitted` transition is audited and makes the record
   read-only. Submission is disabled unless private local development storage is

@@ -47,7 +47,6 @@ Thumbs.db
 
 # Local private development storage
 /apps/web/.private-storage/
-.vercel
 
 # IDE
 .idea/
@@ -56,11 +55,7 @@ Thumbs.db
 *.swo
 
 # Testing
-coverage/
 .nyc_output/
-
-# Storybook
-storybook-static/
 
 # Chromatic
 chromatic/
@@ -72,6 +67,3 @@ test-results/
 # Supabase
 .supabase/
 supabase/.temp/
-
-# TypeScript
-*.tsbuildinfo

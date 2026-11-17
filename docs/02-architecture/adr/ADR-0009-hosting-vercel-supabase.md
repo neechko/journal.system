@@ -1,4 +1,4 @@
-# ADR 0003: Hosting & Database — Vercel + Supabase
+# ADR-0009: Hosting & Database — Vercel + Supabase
 
 ## Status
 Accepted

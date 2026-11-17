@@ -1,4 +1,4 @@
-# ADR 0005: Crossref DOI Prefix — One Per Journal
+# ADR-0011: Crossref DOI Prefix — One Per Journal
 
 ## Status
 Accepted
