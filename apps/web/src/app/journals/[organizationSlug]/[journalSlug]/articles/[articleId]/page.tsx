@@ -89,7 +89,7 @@ export default async function ArticlePage({ params }: PageProps) {
   }).format(article.publishedAt!);
 
   return (
-    <main className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
+    <main id="main-content" className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
       <PublicSiteHeader />
       <article className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
@@ -224,7 +224,7 @@ export default async function ArticlePage({ params }: PageProps) {
             <h2 id="fulltext-heading" className="font-display text-2xl text-ink">
               Full Text
             </h2>
-            <div className="mt-6 prose prose-forest max-w-none" dangerouslySetInnerHTML={{ __html: article.htmlContent }} />
+            <div className="mt-6 prose-article max-w-none" dangerouslySetInnerHTML={{ __html: article.htmlContent }} />
           </section>
         )}
 

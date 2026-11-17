@@ -29,7 +29,7 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
 
   if (!isOidcConfigured) {
     return (
-      <main className="min-h-screen bg-paper text-ink">
+      <main id="main-content" className="min-h-screen bg-paper text-ink">
         <PublicSiteHeader />
         <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">Editor workspace</p>
@@ -59,11 +59,11 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
   const statusColors: Record<string, string> = {
     draft: "bg-lime/50 text-forest-deep",
     submitted: "bg-lime/50 text-forest-deep",
-    under_review: "bg-blue/50 text-blue-deep",
-    revision_requested: "bg-amber/50 text-amber-deep",
+    under_review: "bg-info/15 text-info-deep",
+    revision_requested: "bg-warning/15 text-warning-deep",
     accepted: "bg-forest/10 text-forest",
     rejected: "bg-coral/10 text-coral",
-    withdrawn: "bg-muted text-muted",
+    withdrawn: "bg-line text-muted",
   };
 
   const statusLabels: Record<string, string> = {
@@ -77,7 +77,7 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
   };
 
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main id="main-content" className="min-h-screen bg-paper text-ink">
       <PublicSiteHeader />
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
@@ -234,7 +234,7 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
                             <span className="rounded-full bg-forest/10 px-2.5 py-0.5 text-xs font-semibold text-forest">Completed</span>
                           )}
                           {!assignment.completedAt && !assignment.unassignedAt && (
-                            <span className="rounded-full bg-amber/50 px-2.5 py-0.5 text-xs font-semibold text-amber-950">Pending</span>
+                            <span className="rounded-full bg-warning/15 px-2.5 py-0.5 text-xs font-semibold text-warning-deep">Pending</span>
                           )}
                           {assignment.unassignedAt && (
                             <span className="rounded-full bg-coral/10 px-2.5 py-0.5 text-xs font-semibold text-coral">Unassigned</span>
@@ -272,9 +272,9 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
                           </div>
                         )}
                         {review.commentsToEditor && (
-                          <div className="rounded-xl bg-amber-50 p-3">
-                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-950">Comments to editor (confidential)</p>
-                            <p className="mt-1 text-sm leading-6 text-amber-950">{review.commentsToEditor}</p>
+                          <div className="rounded-xl border border-warning/30 bg-warning/10 p-3">
+                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-warning-deep">Comments to editor (confidential)</p>
+                            <p className="mt-1 text-sm leading-6 text-ink">{review.commentsToEditor}</p>
                           </div>
                         )}
                       </div>
@@ -296,7 +296,7 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
                         <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                           decision.outcome === "accept" ? "bg-forest/10 text-forest" :
                           decision.outcome === "reject" ? "bg-coral/10 text-coral" :
-                          "bg-amber/50 text-amber-deep"
+                          "bg-warning/15 text-warning-deep"
                         }`}>
                           {decision.outcome.replace("_", " ")}
                         </span>

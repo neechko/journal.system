@@ -1,33 +1,58 @@
 name: Deploy Preview
 
 on:
-  push:
-    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
   deployments: write
+  pull-requests: write
 
 concurrency:
   group: preview-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+
 jobs:
   deploy-preview:
+    # Preview deployments need the same Vercel project link as production.
+    # Skipped automatically when the secrets are not configured (e.g. forks).
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: apps/web/package-lock.json
+
+      - name: Validate Vercel configuration
+        run: |
+          case "$VERCEL_ORG_ID" in
+            team_*) ;;
+            *)
+              echo "::error::VERCEL_ORG_ID must start with 'team_'. The stored value is not a team id."
+              exit 1
+              ;;
+          esac
+          case "$VERCEL_PROJECT_ID" in
+            prj_*) ;;
+            *)
+              echo "::error::VERCEL_PROJECT_ID must start with 'prj_'."
+              exit 1
+              ;;
+          esac
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
@@ -44,11 +69,10 @@ jobs:
         id: vercel-deploy
         run: |
           url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} | tail -1)
-          echo "deployment-url=$url" >> $GITHUB_OUTPUT
+          echo "deployment-url=$url" >> "$GITHUB_OUTPUT"
         working-directory: apps/web
 
-      - name: Comment PR with Preview URL
-        if: github.event_name == 'pull_request'
+      - name: Comment PR with preview URL
         uses: actions/github-script@v7
         with:
           script: |

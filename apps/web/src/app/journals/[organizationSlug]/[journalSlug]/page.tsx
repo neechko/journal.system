@@ -99,7 +99,7 @@ export default async function PublicJournalPage({
   } catch (error) {
     if (error instanceof AppError && error.code === "DATABASE_NOT_CONFIGURED") {
       return (
-        <main className="min-h-screen bg-paper text-ink">
+        <main id="main-content" className="min-h-screen bg-paper text-ink">
           <PublicSiteHeader />
           <div className="mx-auto min-h-[50vh] max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
@@ -124,7 +124,7 @@ export default async function PublicJournalPage({
   }
 
   return (
-    <main className="min-h-screen bg-paper text-ink" data-journal={journal.slug}>
+    <main id="main-content" className="min-h-screen bg-paper text-ink" data-journal={journal.slug}>
       <PublicSiteHeader />
       <nav
         aria-label="Breadcrumb"

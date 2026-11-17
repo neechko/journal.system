@@ -77,7 +77,7 @@ export default async function EditSubmissionDraftPage({
   });
 
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main id="main-content" className="min-h-screen bg-paper text-ink">
       <PublicSiteHeader />
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
@@ -230,7 +230,7 @@ export default async function EditSubmissionDraftPage({
 
           {submission.status === "draft" && localStorageEnabled ? (
             <>
-              <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+              <p className="rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm leading-6 text-ink">
                 Local development storage is unencrypted and does not scan for
                 malware. Use synthetic test PDFs only; do not upload real or
                 confidential manuscripts.

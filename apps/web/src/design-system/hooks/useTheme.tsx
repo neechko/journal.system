@@ -148,6 +148,21 @@ export function useTheme(): ThemeContextValue {
 }
 
 /**
+ * Non-throwing variant for components that may be rendered in isolation
+ * (tests, Storybook) without a ThemeProvider.
+ */
+const defaultThemeContext: ThemeContextValue = {
+  theme: 'system',
+  resolvedTheme: 'light',
+  setTheme: () => {},
+  toggleTheme: () => {},
+};
+
+export function useThemeOrDefault(): ThemeContextValue {
+  return useContext(ThemeContext) ?? defaultThemeContext;
+}
+
+/**
  * Hook for components that need theme-aware values
  */
 export function useThemeValue<T>(lightValue: T, darkValue: T): T {

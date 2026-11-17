@@ -59,7 +59,7 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main id="main-content" className="min-h-screen bg-paper text-ink">
       <PublicSiteHeader />
 
       <section className="relative isolate overflow-hidden bg-forest text-white">

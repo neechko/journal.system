@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export function PublicSiteHeader() {
   return (
@@ -46,6 +47,8 @@ export function PublicSiteHeader() {
             For publishers
           </Link>
         </nav>
+
+        <ThemeSwitcher />
 
         <details className="relative md:hidden">
           <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-semibold text-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest [&::-webkit-details-marker]:hidden">

@@ -26,7 +26,7 @@ async function getEditorJournals(userId: string) {
 export default async function EditorSubmissionsPage() {
   if (!isOidcConfigured) {
     return (
-      <main className="min-h-screen bg-paper text-ink">
+      <main id="main-content" className="min-h-screen bg-paper text-ink">
         <PublicSiteHeader />
         <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
           <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
@@ -57,7 +57,7 @@ export default async function EditorSubmissionsPage() {
   const userId = session?.user?.id;
   if (!userId) {
     return (
-      <main className="min-h-screen bg-paper text-ink">
+      <main id="main-content" className="min-h-screen bg-paper text-ink">
         <PublicSiteHeader />
         <section className="mx-auto min-h-[60vh] max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
@@ -78,7 +78,7 @@ export default async function EditorSubmissionsPage() {
   // TODO: Implement proper editor journal access check
   // For now, show placeholder
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main id="main-content" className="min-h-screen bg-paper text-ink">
       <PublicSiteHeader />
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">

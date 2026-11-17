@@ -22,6 +22,8 @@ apps/web/lint.txt
 **/.turbo/
 **/.vercel/
 *.tsbuildinfo
+apps/web/*.txt
+apps/web/storybook-static/
 
 # Environment files
 .env*

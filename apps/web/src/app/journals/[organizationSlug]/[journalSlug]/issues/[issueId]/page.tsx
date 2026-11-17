@@ -94,7 +94,7 @@ export default async function IssuePage({ params }: PageProps) {
     : null;
 
   return (
-    <main className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
+    <main id="main-content" className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
       <PublicSiteHeader />
       <article className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
@@ -136,7 +136,7 @@ export default async function IssuePage({ params }: PageProps) {
           </div>
 
           {issue.description && (
-            <div className="mt-6 max-w-2xl prose prose-muted">
+            <div className="mt-6 max-w-2xl text-sm leading-6 text-muted">
               {issue.description}
             </div>
           )}
@@ -198,7 +198,7 @@ export default async function IssuePage({ params }: PageProps) {
                       </header>
 
                       {article.abstract && (
-                        <div className="mt-4 max-w-2xl prose prose-muted text-sm">
+                        <div className="mt-4 max-w-2xl text-sm text-muted">
                           <p>{article.abstract}</p>
                         </div>
                       )}
