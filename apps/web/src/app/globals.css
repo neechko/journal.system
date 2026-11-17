@@ -6,10 +6,7 @@
 
 @import 'tailwindcss';
 
-/* ============================================
-   Tailwind v4 Theme — Custom Colors used in App
-   (Define actual values here for build-time resolution)
-   ============================================ */
+/* Tailwind needs these colors at build time to emit the utility classes. */
 @theme {
   /* Base semantic colors */
   --color-paper: #ffffff;
@@ -18,7 +15,7 @@
   --color-muted: #525252;
   --color-line: #e5e5e5;
 
-  /* Brand colors (Default — Taylor & Francis blue) */
+  /* Provisional action color; final brand identity is still open. */
   --color-forest: #2563eb;
   --color-forest-deep: #1d4ed8;
   --color-lime: #16a34a;
@@ -44,37 +41,7 @@
     "Liberation Mono", "Courier New", monospace;
 }
 
-/* ============================================
-   Journal Brand Theme Overrides
-   Override generated --color-forest etc. via CSS cascade
-   ============================================ */
-/* Journal of Computer Science — Taylor & Francis Blue */
-[data-journal="jcs"] {
-  --color-forest: #2563eb;
-  --color-forest-deep: #1d4ed8;
-}
-
-/* International Journal of Engineering — Elsevier Green */
-[data-journal="ije"] {
-  --color-forest: #16a34a;
-  --color-forest-deep: #15803d;
-}
-
-/* Medical Research Review — Nature Red */
-[data-journal="mrr"] {
-  --color-forest: #dc2626;
-  --color-forest-deep: #b91c1c;
-}
-
-/* Social Sciences Quarterly — PLOS Orange */
-[data-journal="ssq"] {
-  --color-forest: #ea580c;
-  --color-forest-deep: #c2410c;
-}
-
-/* ============================================
-   Dark Mode Overrides (generated vars + journal theming)
-   ============================================ */
+/* Both the system preference and explicit switch use the same dark tokens. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     /* Generated Tailwind v4 theme variables */
@@ -88,24 +55,6 @@
     --color-lime: #22c55e;
     --color-coral: #ef4444;
     --color-white: #171717;
-
-    /* Journal theming - dark mode */
-    [data-journal="jcs"] {
-      --color-forest: #3b82f6;
-      --color-forest-deep: #60a5fa;
-    }
-    [data-journal="ije"] {
-      --color-forest: #22c55e;
-      --color-forest-deep: #4ade80;
-    }
-    [data-journal="mrr"] {
-      --color-forest: #ef4444;
-      --color-forest-deep: #f87171;
-    }
-    [data-journal="ssq"] {
-      --color-forest: #f97316;
-      --color-forest-deep: #fb923c;
-    }
   }
 }
 
@@ -658,6 +607,15 @@ pre code {
   padding: 0;
   font-size: inherit;
   color: inherit;
+}
+
+:is(a[href], button, summary, select, label[for], label:has(input:is([type="checkbox"], [type="radio"])), input:is([type="checkbox"], [type="radio"]), [role="button"], [role="tab"], [role="switch"]):not(:disabled):not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+:is(button, select, input, [role="button"], [role="tab"], [role="switch"]):disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 } /* end @layer base */
 

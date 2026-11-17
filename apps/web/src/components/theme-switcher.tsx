@@ -46,15 +46,15 @@ export function ThemeSwitcher({ variant = "public" }: { variant?: "public" | "wo
 
   const className =
     variant === "workspace"
-      ? "inline-flex size-10 items-center justify-center rounded-full border border-white/25 text-white/85 transition-colors hover:border-lime hover:text-lime focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
-      : "inline-flex size-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:border-forest hover:text-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest";
+      ? "inline-flex size-11 items-center justify-center rounded-lg border border-white/25 text-white transition-colors hover:border-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      : "inline-flex size-11 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:border-forest hover:text-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest";
 
   return (
     <button
       aria-label={`Theme: ${labels[theme]}. Switch to ${labels[upcoming]}.`}
       className={className}
       onClick={() => setTheme(upcoming)}
-      title={`Theme: ${labels[theme]} — switch to ${labels[upcoming]}`}
+      title={`Theme: ${labels[theme]}. Switch to ${labels[upcoming]}`}
       type="button"
     >
       <ThemeIcon theme={theme} />

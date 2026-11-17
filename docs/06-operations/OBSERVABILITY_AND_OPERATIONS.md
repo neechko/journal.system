@@ -1,7 +1,7 @@
 # Observability and Operations
 
 **Status:** Proposed baseline
-**Last reviewed:** 2026-11-15
+**Last reviewed:** 2026-11-18
 
 ## 1. Observability
 
@@ -40,6 +40,13 @@ application's lint, type-check, PGlite-backed tests, and production build on
 pushes, pull requests, and manual dispatch. It uses read-only repository
 permissions and does not require production credentials or an external
 database.
+
+`cd-production.yml` mengulang lint, typecheck, test, dan build sebelum migrasi
+dan deploy. Migrasi serta deploy berada dalam satu job berurutan agar aplikasi
+baru tidak berjalan sebelum skema kompatibel tersedia. Migrasi harus diperiksa
+sebelum merge ke `main`, termasuk dampak pada data lama dan rencana pemulihan.
+`db-migrate.yml` hanya dapat dijalankan manual untuk perbaikan operasional;
+workflow itu tidak lagi berpacu dengan deploy pada setiap push.
 
 ## 6. Operational runbooks to add
 

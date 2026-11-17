@@ -105,7 +105,7 @@ export default async function AuthorSubmissionsPage() {
                     </time>
                   </div>
                   <Link
-                    className="mt-5 inline-flex min-h-10 items-center text-sm font-semibold text-forest underline decoration-forest/30 underline-offset-4 hover:decoration-forest"
+                    className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-forest underline decoration-forest/30 underline-offset-4 hover:decoration-forest"
                     href={`/author/submissions/${submission.id}`}
                   >
                     {submission.status === "submitted"
@@ -130,13 +130,10 @@ export default async function AuthorSubmissionsPage() {
               explicitly enabled local development.
             </p>
             <Link
-              className="mt-5 inline-flex min-h-10 items-center text-sm font-semibold text-forest underline decoration-forest/30 underline-offset-4 hover:decoration-forest"
+              className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-forest underline decoration-forest/30 underline-offset-4 hover:decoration-forest"
               href="/journals"
             >
-              Explore journals
-              <span aria-hidden="true" className="ml-2">
-                →
-              </span>
+              Browse the journal directory
             </Link>
           </section>
         )}

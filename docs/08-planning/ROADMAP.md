@@ -1,6 +1,11 @@
 # Initial Roadmap
 
 **Status:** Proposed; urutan dapat berubah setelah discovery dan validasi pengguna.
+**Last reviewed:** 2026-11-18
+
+Untuk status kemampuan berbasis kode dan acceptance gate menuju pengganti OJS,
+lihat `OJS_REPLACEMENT_GAP.md`. Daftar fase di bawah adalah target, bukan daftar
+fitur yang sudah selesai.
 
 ## Phase 0 — Discovery and foundation
 

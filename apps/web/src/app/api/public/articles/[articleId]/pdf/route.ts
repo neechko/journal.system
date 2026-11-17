@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AppError } from "@/modules/shared/app-error";
 import { createPostgresProductionRepository } from "@/modules/production/infrastructure/postgres-repository";
 import { createPublicStorage } from "@/modules/production/infrastructure/public-storage";
+import { isPdfPayload } from "@/modules/submissions/application/file-validation";
 import { getDatabase } from "@/server/db/client";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +43,7 @@ export async function GET(
 
     if (
       file.content.byteLength !== file.byteSize ||
-      file.sha256 !== file.sha256 ||
+      !isPdfPayload(file.content) ||
       file.contentType !== "application/pdf"
     ) {
       throw new AppError("STORAGE_INTEGRITY_FAILURE", "The stored PDF failed its integrity check.");

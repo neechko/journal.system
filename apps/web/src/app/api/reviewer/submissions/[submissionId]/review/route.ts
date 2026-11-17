@@ -42,6 +42,11 @@ export async function POST(
     return new Response("Invalid input", { status: 400 });
   }
 
+  const { submissionId } = await params;
+  if (submissionId !== parsed.data.submissionId) {
+    return new Response("Invalid input", { status: 400 });
+  }
+
   try {
     await submitReview(
       createPostgresEditorialRepository(getDatabase()),
@@ -63,7 +68,15 @@ export async function POST(
     );
   } catch (error) {
     if (error instanceof AppError) {
-      return new Response(error.message, { status: 400 });
+      const status =
+        error.code === "NOT_FOUND"
+          ? 404
+          : error.code === "FORBIDDEN"
+            ? 403
+            : error.code === "CONFLICT" || error.code === "INVALID_STATE"
+              ? 409
+              : 400;
+      return new Response(error.message, { status });
     }
     throw error;
   }

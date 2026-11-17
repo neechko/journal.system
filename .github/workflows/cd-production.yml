@@ -40,6 +40,26 @@ jobs:
           cache: 'npm'
           cache-dependency-path: apps/web/package-lock.json
 
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: apps/web
+
+      - name: Lint
+        run: npm run lint
+        working-directory: apps/web
+
+      - name: Type-check
+        run: npm run typecheck
+        working-directory: apps/web
+
+      - name: Test
+        run: npm test
+        working-directory: apps/web
+
+      - name: Build
+        run: npm run build
+        working-directory: apps/web
+
       - name: Verify confirmation
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -72,6 +92,22 @@ jobs:
             echo "::error::Missing secret VERCEL_TOKEN."
             exit 1
           fi
+
+      - name: Validate database migration connection
+        env:
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: |
+          if [ -z "$DIRECT_DATABASE_URL" ]; then
+            echo "::error::Missing secret DIRECT_DATABASE_URL."
+            exit 1
+          fi
+
+      - name: Migrate database before deploying the app
+        env:
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: npm run db:migrate
+        working-directory: apps/web
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest

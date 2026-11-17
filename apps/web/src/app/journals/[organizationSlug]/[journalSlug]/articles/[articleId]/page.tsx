@@ -4,9 +4,8 @@ import { z } from "zod";
 import Link from "next/link";
 import { PublicSiteFooter } from "@/components/public-site-footer";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { getArticleWithIssueUseCase } from "@/modules/production/application/use-cases";
-import { createPostgresProductionRepository } from "@/modules/production/infrastructure/postgres-repository";
-import { createPostgresTenancyRepository } from "@/modules/tenancy/infrastructure/postgres-repository";
+import { getPublishedArticle } from "@/modules/publications/application/use-cases";
+import { createPostgresPublicationsRepository } from "@/modules/publications/infrastructure/postgres-repository";
 import { getDatabase } from "@/server/db/client";
 
 export const dynamic = "force-dynamic";
@@ -19,79 +18,134 @@ interface PageProps {
   }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+async function loadArticle(params: PageProps["params"]) {
   const { organizationSlug, journalSlug, articleId } = await params;
-  
+
   if (!z.uuid().safeParse(articleId).success) {
-    return { title: "Article not found" };
+    return null;
   }
 
-  const repository = createPostgresProductionRepository(getDatabase());
-  const result = await getArticleWithIssueUseCase(repository, articleId);
-  
-  if (!result || !result.article.publishedAt) {
-    return { title: "Article not found" };
+  return getPublishedArticle(createPostgresPublicationsRepository(getDatabase()), {
+    organizationSlug,
+    journalSlug,
+    articleId,
+  });
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const article = await loadArticle(params);
+
+  if (!article) {
+    return { title: "Article not found", robots: { index: false, follow: false } };
   }
 
-  const article = result.article;
-  const authors = article.authors as Array<{ name: string }>;
-  const authorNames = authors.map((a) => a.name).join(", ");
+  const path = `/journals/${article.journal.organizationSlug}/${article.journal.slug}/articles/${article.id}`;
+  const publishedDate = article.publishedAt.toISOString().split("T")[0];
+  const description = article.abstract ?? undefined;
 
   return {
-    title: `${article.title} | ${journalSlug}`,
-    description: article.abstract ?? undefined,
-    authors: authors.map((a) => ({ name: a.name })),
+    title: article.title,
+    description,
+    authors: article.authors.map((author) => ({ name: author.name })),
+    alternates: { canonical: path },
     openGraph: {
       title: article.title,
-      description: article.abstract ?? undefined,
+      description,
       type: "article",
-      publishedTime: article.publishedAt?.toISOString(),
-      authors: authorNames,
+      url: path,
+      siteName: article.journal.title,
+      publishedTime: article.publishedAt.toISOString(),
+      authors: article.authors.map((author) => author.name),
+      tags: article.keywords,
+    },
+    twitter: {
+      card: "summary",
+      title: article.title,
+      description,
     },
     other: {
-      "citation_title": article.title,
-      "citation_author": authors.map((a) => a.name).join("; "),
-      "citation_journal_title": journalSlug,
-      "citation_publication_date": article.publishedAt ? article.publishedAt.toISOString().split("T")[0] : "",
-      "citation_doi": article.doi ?? "",
-      "citation_pdf_url": article.pdfFileId ? `/api/public/articles/${articleId}/pdf` : "",
+      citation_title: article.title,
+      citation_author: article.authors.map((author) => author.name),
+      citation_journal_title: article.journal.title,
+      citation_publication_date: publishedDate,
+      ...(article.volume ? { citation_volume: String(article.volume.number) } : {}),
+      ...(article.issue ? { citation_issue: String(article.issue.number) } : {}),
+      ...(article.pageStart ? { citation_firstpage: String(article.pageStart) } : {}),
+      ...(article.pageEnd ? { citation_lastpage: String(article.pageEnd) } : {}),
+      ...(article.doi ? { citation_doi: article.doi } : {}),
+      citation_pdf_url: article.hasPdf
+        ? `/api/public/articles/${article.id}/pdf`
+        : "",
+      ...(article.keywords.length > 0
+        ? { citation_keywords: article.keywords.join("; ") }
+        : {}),
     },
   };
 }
 
 export default async function ArticlePage({ params }: PageProps) {
-  const { organizationSlug, journalSlug, articleId } = await params;
+  const article = await loadArticle(params);
 
-  if (!z.uuid().safeParse(articleId).success) {
+  if (!article) {
     notFound();
   }
 
-  const repository = createPostgresProductionRepository(getDatabase());
-  const result = await getArticleWithIssueUseCase(repository, articleId);
-
-  if (!result || !result.article.publishedAt) {
-    notFound();
-  }
-
-  const article = result.article;
-  const authors = article.authors as Array<{
-    name: string;
-    affiliation: string | null;
-    orcid: string | null;
-    email: string | null;
-    isCorresponding: boolean;
-    order: number;
-  }>;
-  const keywords = article.keywords as string[];
+  const { organizationSlug, slug: journalSlug } = article.journal;
+  const journalPath = `/journals/${organizationSlug}/${journalSlug}`;
   const publishedDate = new Intl.DateTimeFormat("en", {
     dateStyle: "long",
     timeZone: "UTC",
-  }).format(article.publishedAt!);
+  }).format(article.publishedAt);
+
+  const citation = article.authors.map((author) => author.name).join(", ");
+  const issueLabel = article.issue
+    ? [article.volume ? `Vol. ${article.volume.number}` : null, `No. ${article.issue.number}`, `(${article.issue.year})`]
+        .filter(Boolean)
+        .join(" ")
+    : null;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    headline: article.title,
+    name: article.title,
+    ...(article.abstract ? { abstract: article.abstract } : {}),
+    ...(article.doi ? { identifier: `https://doi.org/${article.doi}` } : {}),
+    datePublished: article.publishedAt.toISOString(),
+    ...(article.keywords.length > 0 ? { keywords: article.keywords.join(", ") } : {}),
+    author: article.authors.map((author) => ({
+      "@type": "Person",
+      name: author.name,
+      ...(author.orcid ? { identifier: `https://orcid.org/${author.orcid}` } : {}),
+      ...(author.affiliation ? { affiliation: author.affiliation } : {}),
+    })),
+    isPartOf: {
+      "@type": "Periodical",
+      name: article.journal.title,
+      ...(article.volume
+        ? {
+            volumeNumber: String(article.volume.number),
+            ...(article.issue ? { issueNumber: String(article.issue.number) } : {}),
+          }
+        : {}),
+    },
+    publisher: {
+      "@type": "Organization",
+      name: article.journal.organizationName,
+    },
+  };
 
   return (
     <main id="main-content" className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
       <PublicSiteHeader />
       <article className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
+          type="application/ld+json"
+        />
+
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
           <Link className="hover:text-forest" href="/">
             Home
@@ -101,8 +155,8 @@ export default async function ArticlePage({ params }: PageProps) {
             Journals
           </Link>
           <span aria-hidden="true" className="mx-2 text-line">/</span>
-          <Link className="hover:text-forest" href={`/journals/${organizationSlug}/${journalSlug}`}>
-            {journalSlug}
+          <Link className="hover:text-forest" href={journalPath}>
+            {article.journal.title}
           </Link>
           <span aria-hidden="true" className="mx-2 text-line">/</span>
           <span aria-current="page">Article</span>
@@ -110,14 +164,14 @@ export default async function ArticlePage({ params }: PageProps) {
 
         <header className="mt-10 max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
-            {result.issue ? `Vol. ${result.volume?.number} No. ${result.issue.number} (${result.issue.year})` : "Published online"}
+            {issueLabel ?? "Published online"}
           </p>
           <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">
             {article.title}
           </h1>
 
           <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted">
-            <time dateTime={article.publishedAt!.toISOString()}>
+            <time dateTime={article.publishedAt.toISOString()}>
               Published: {publishedDate}
             </time>
             {article.doi && (
@@ -141,8 +195,8 @@ export default async function ArticlePage({ params }: PageProps) {
             Authors
           </h2>
           <ul className="flex flex-wrap items-center gap-3">
-            {authors.map((author) => (
-              <li key={author.name} className="flex items-center gap-2">
+            {article.authors.map((author, index) => (
+              <li key={`${author.name}-${index}`} className="flex items-center gap-2">
                 <span className="font-semibold text-ink">{author.name}</span>
                 {author.isCorresponding && (
                   <span className="rounded-full bg-lime/50 px-2 py-0.5 text-xs font-medium text-forest-deep" title="Corresponding author">
@@ -166,23 +220,25 @@ export default async function ArticlePage({ params }: PageProps) {
             ))}
           </ul>
 
-          <div className="mt-4 flex flex-wrap items-start gap-4 text-sm text-muted">
-            {authors
-              .filter((a) => a.affiliation)
-              .map((author) => (
-                <p key={author.name} className="whitespace-nowrap">
-                  {author.affiliation}
-                </p>
-              ))}
-          </div>
+          {article.authors.some((author) => author.affiliation) && (
+            <div className="mt-4 flex flex-wrap items-start gap-4 text-sm text-muted">
+              {article.authors
+                .filter((author) => author.affiliation)
+                .map((author, index) => (
+                  <p key={`${author.name}-affiliation-${index}`} className="whitespace-nowrap">
+                    {author.affiliation}
+                  </p>
+                ))}
+            </div>
+          )}
 
-          {authors.some((a) => a.email) && (
+          {article.authors.some((author) => author.email && author.isCorresponding) && (
             <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted">
-              {authors
-                .filter((a) => a.email && a.isCorresponding)
-                .map((author) => (
+              {article.authors
+                .filter((author) => author.email && author.isCorresponding)
+                .map((author, index) => (
                   <a
-                    key={author.name}
+                    key={`${author.email}-${index}`}
                     className="text-forest underline decoration-forest/30 underline-offset-2 hover:decoration-forest"
                     href={`mailto:${author.email}`}
                   >
@@ -204,13 +260,13 @@ export default async function ArticlePage({ params }: PageProps) {
           </section>
         )}
 
-        {keywords.length > 0 && (
+        {article.keywords.length > 0 && (
           <section aria-labelledby="keywords-heading" className="mt-10 max-w-3xl border-t border-line pt-8">
             <h2 id="keywords-heading" className="font-display text-2xl text-ink">
               Keywords
             </h2>
             <ul className="mt-4 flex flex-wrap gap-2">
-              {keywords.map((keyword, index) => (
+              {article.keywords.map((keyword, index) => (
                 <li key={`${keyword}-${index}`} className="rounded-full bg-paper px-3 py-1 text-sm text-muted">
                   {keyword}
                 </li>
@@ -224,7 +280,7 @@ export default async function ArticlePage({ params }: PageProps) {
             <h2 id="fulltext-heading" className="font-display text-2xl text-ink">
               Full Text
             </h2>
-            <div className="mt-6 prose-article max-w-none" dangerouslySetInnerHTML={{ __html: article.htmlContent }} />
+            <div className="prose-article mt-6 max-w-none" dangerouslySetInnerHTML={{ __html: article.htmlContent }} />
           </section>
         )}
 
@@ -246,10 +302,10 @@ export default async function ArticlePage({ params }: PageProps) {
                   View DOI
                 </a>
               )}
-              {article.pdfFileId && (
+              {article.hasPdf && (
                 <a
                   className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-medium text-forest hover:bg-forest/5 transition-colors"
-                  href={`/api/public/articles/${articleId}/pdf`}
+                  href={`/api/public/articles/${article.id}/pdf`}
                 >
                   <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -265,25 +321,29 @@ export default async function ArticlePage({ params }: PageProps) {
 
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
               <span>Published in</span>
-              <Link className="text-forest underline decoration-forest/30 underline-offset-2 hover:decoration-forest" href={`/journals/${organizationSlug}/${journalSlug}`}>
-                {journalSlug}
+              <Link className="text-forest underline decoration-forest/30 underline-offset-2 hover:decoration-forest" href={journalPath}>
+                {article.journal.title}
               </Link>
-              {result.issue && (
+              {article.issue && (
                 <>
                   <span aria-hidden="true">·</span>
-                  <Link className="text-forest underline decoration-forest/30 underline-offset-2 hover:decoration-forest" href={`/journals/${organizationSlug}/${journalSlug}/issues/${result.issue.id}`}>
-                    {result.volume ? `Vol. ${result.volume.number}` : ""} {result.issue.label ? `(${result.issue.label})` : `No. ${result.issue.number}`}
+                  <Link
+                    className="text-forest underline decoration-forest/30 underline-offset-2 hover:decoration-forest"
+                    href={`${journalPath}/issues/${article.issue.id}`}
+                  >
+                    {article.volume ? `Vol. ${article.volume.number}` : ""}{" "}
+                    {article.issue.label ? `(${article.issue.label})` : `No. ${article.issue.number}`}
                   </Link>
                 </>
               )}
             </div>
           </div>
 
-          {article.doi && (
-            <p className="mt-6 text-xs text-muted">
-              <strong>Cite this article:</strong> {authors.map((a) => a.name).join(", ")}. {article.title}. <em>{journalSlug}</em>. {article.publishedAt?.getFullYear()}{article.doi ? `; doi: ${article.doi}` : ""}.
-            </p>
-          )}
+          <p className="mt-6 text-xs text-muted">
+            <strong>Cite this article:</strong> {citation}. {article.title}.{" "}
+            <em>{article.journal.title}</em>. {article.publishedAt.getUTCFullYear()}
+            {article.doi ? `; doi: ${article.doi}` : ""}.
+          </p>
         </footer>
       </article>
       <PublicSiteFooter />

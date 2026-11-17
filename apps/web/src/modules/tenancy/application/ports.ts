@@ -60,6 +60,20 @@ export interface AuditEventInput {
   reason: string;
 }
 
+export type JournalRole =
+  | "organization_admin"
+  | "editor_in_chief"
+  | "managing_editor"
+  | "editor"
+  | "reviewer"
+  | "production_editor";
+
+export interface JournalAccess {
+  organizationId: string;
+  journalId: string;
+  roles: JournalRole[];
+}
+
 export interface TenancyTransaction {
   isPlatformOperator(userId: string): Promise<boolean>;
   isOrganizationAdmin(userId: string, organizationId: string): Promise<boolean>;
@@ -98,6 +112,10 @@ export interface TenancyRepository {
   ): Promise<T>;
   isPlatformOperator(userId: string): Promise<boolean>;
   listOrganizationsForUser(userId: string): Promise<OrganizationSummary[]>;
+  getJournalAccess(
+    userId: string,
+    journalId: string,
+  ): Promise<JournalAccess | null>;
   getOrganizationWorkspace(
     userId: string,
     organizationId: string,

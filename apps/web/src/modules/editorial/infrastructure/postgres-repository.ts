@@ -65,6 +65,73 @@ function mapSubmissionRow(row: SubmissionRow): EditorialSubmission {
   };
 }
 
+/**
+ * Projection shared by every read that needs a submission together with its
+ * journal and organization. Keeping it in one place avoids duplicating the
+ * joins across the state-transition methods.
+ */
+const submissionSelection = {
+  id: schema.submissions.id,
+  organizationId: schema.organizations.id,
+  journalId: schema.submissions.journalId,
+  organizationName: schema.organizations.name,
+  organizationSlug: schema.organizations.slug,
+  journalTitle: schema.journals.title,
+  journalSlug: schema.journals.slug,
+  title: schema.submissions.title,
+  abstract: schema.submissions.abstract,
+  keywords: schema.submissions.keywords,
+  status: schema.submissions.status,
+  createdBy: schema.submissions.createdBy,
+  createdAt: schema.submissions.createdAt,
+  updatedAt: schema.submissions.updatedAt,
+  submittedAt: schema.submissions.submittedAt,
+  submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
+  currentManuscriptVersion: sql<number>`(
+    SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
+    FROM ${schema.submissionManuscripts}
+    WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
+  )`.as("currentManuscriptVersion"),
+} as const;
+
+/**
+ * Editorial roles that may act on a journal's submission workflow. Kept in one
+ * place so the repository and the use cases cannot drift apart.
+ */
+const EDITORIAL_JOURNAL_ROLES = [
+  "editor_in_chief",
+  "managing_editor",
+  "editor",
+] as const;
+
+/**
+ * Tenant scope for editorial reads and writes: either an organization admin of
+ * the journal's organization, or an active journal-scoped editorial member.
+ * Written as SQL so it can be reused across selects and updates.
+ */
+function editorialAccessCondition(userId: string) {
+  return sql`(
+    exists (
+      select 1
+      from ${schema.organizationMemberships}
+      where ${schema.organizationMemberships.organizationId} = ${schema.organizations.id}
+        and ${schema.organizationMemberships.userId} = ${userId}
+        and ${schema.organizationMemberships.role} = 'organization_admin'
+    )
+    or exists (
+      select 1
+      from ${schema.journalMemberships}
+      where ${schema.journalMemberships.journalId} = ${schema.journals.id}
+        and ${schema.journalMemberships.userId} = ${userId}
+        and ${schema.journalMemberships.revokedAt} is null
+        and ${schema.journalMemberships.role} in (${sql.join(
+          EDITORIAL_JOURNAL_ROLES.map((role) => sql`${role}`),
+          sql`, `,
+        )})
+    )
+  )`;
+}
+
 export function createPostgresEditorialRepository<
   TQueryResult extends PgQueryResultHKT,
 >(
@@ -75,32 +142,35 @@ export function createPostgresEditorialRepository<
       work: (transaction: EditorialTransaction) => Promise<T>,
     ): Promise<T> {
       return database.transaction(async (tx) => {
+        /**
+         * Re-reads a submission with its journal and organization after a state
+         * change. `UPDATE ... FROM` cannot reference the target table again, so
+         * transitions update first and then project the joined row here.
+         */
+        async function selectSubmissionRowById(
+          submissionId: string,
+        ): Promise<SubmissionRow | undefined> {
+          const [row] = await tx
+            .select(submissionSelection)
+            .from(schema.submissions)
+            .innerJoin(
+              schema.journals,
+              eq(schema.journals.id, schema.submissions.journalId),
+            )
+            .innerJoin(
+              schema.organizations,
+              eq(schema.organizations.id, schema.journals.organizationId),
+            )
+            .where(eq(schema.submissions.id, submissionId))
+            .limit(1);
+
+          return row;
+        }
+
         const transaction: EditorialTransaction = {
           async findSubmissionForEditor(editorUserId, submissionId) {
             const rows = await tx
-              .select({
-                id: schema.submissions.id,
-                organizationId: schema.organizations.id,
-                journalId: schema.submissions.journalId,
-                organizationName: schema.organizations.name,
-                organizationSlug: schema.organizations.slug,
-                journalTitle: schema.journals.title,
-                journalSlug: schema.journals.slug,
-                title: schema.submissions.title,
-                abstract: schema.submissions.abstract,
-                keywords: schema.submissions.keywords,
-                status: schema.submissions.status,
-                createdBy: schema.submissions.createdBy,
-                createdAt: schema.submissions.createdAt,
-                updatedAt: schema.submissions.updatedAt,
-                submittedAt: schema.submissions.submittedAt,
-                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-                currentManuscriptVersion: sql<number>`(
-                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-                  FROM ${schema.submissionManuscripts}
-                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-                )`.as("currentManuscriptVersion"),
-              })
+              .select(submissionSelection)
               .from(schema.submissions)
               .innerJoin(
                 schema.journals,
@@ -110,15 +180,30 @@ export function createPostgresEditorialRepository<
                 schema.organizations,
                 eq(schema.organizations.id, schema.journals.organizationId),
               )
+              .where(and(eq(schema.submissions.id, submissionId), editorialAccessCondition(editorUserId)))
+              .limit(1);
+
+            return rows[0] ? mapSubmissionRow(rows[0]) : null;
+          },
+
+          async findSubmissionForAuthor(authorUserId, submissionId) {
+            const rows = await tx
+              .select(submissionSelection)
+              .from(schema.submissions)
               .innerJoin(
-                schema.organizationMemberships,
+                schema.journals,
+                eq(schema.journals.id, schema.submissions.journalId),
+              )
+              .innerJoin(
+                schema.organizations,
+                eq(schema.organizations.id, schema.journals.organizationId),
+              )
+              .where(
                 and(
-                  eq(schema.organizationMemberships.organizationId, schema.organizations.id),
-                  eq(schema.organizationMemberships.userId, editorUserId),
-                  eq(schema.organizationMemberships.role, "organization_admin"),
+                  eq(schema.submissions.id, submissionId),
+                  eq(schema.submissions.createdBy, authorUserId),
                 ),
               )
-              .where(eq(schema.submissions.id, submissionId))
               .limit(1);
 
             return rows[0] ? mapSubmissionRow(rows[0]) : null;
@@ -127,8 +212,7 @@ export function createPostgresEditorialRepository<
           async listSubmissionsForEditor(editorUserId, journalId, statuses) {
             const conditions = [
               eq(schema.journals.id, journalId),
-              eq(schema.organizationMemberships.userId, editorUserId),
-              eq(schema.organizationMemberships.role, "organization_admin"),
+              editorialAccessCondition(editorUserId),
             ];
 
             if (statuses && statuses.length > 0) {
@@ -136,29 +220,7 @@ export function createPostgresEditorialRepository<
             }
 
             const rows = await tx
-              .select({
-                id: schema.submissions.id,
-                organizationId: schema.organizations.id,
-                journalId: schema.submissions.journalId,
-                organizationName: schema.organizations.name,
-                organizationSlug: schema.organizations.slug,
-                journalTitle: schema.journals.title,
-                journalSlug: schema.journals.slug,
-                title: schema.submissions.title,
-                abstract: schema.submissions.abstract,
-                keywords: schema.submissions.keywords,
-                status: schema.submissions.status,
-                createdBy: schema.submissions.createdBy,
-                createdAt: schema.submissions.createdAt,
-                updatedAt: schema.submissions.updatedAt,
-                submittedAt: schema.submissions.submittedAt,
-                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-                currentManuscriptVersion: sql<number>`(
-                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-                  FROM ${schema.submissionManuscripts}
-                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-                )`.as("currentManuscriptVersion"),
-              })
+              .select(submissionSelection)
               .from(schema.submissions)
               .innerJoin(
                 schema.journals,
@@ -167,14 +229,6 @@ export function createPostgresEditorialRepository<
               .innerJoin(
                 schema.organizations,
                 eq(schema.organizations.id, schema.journals.organizationId),
-              )
-              .innerJoin(
-                schema.organizationMemberships,
-                and(
-                  eq(schema.organizationMemberships.organizationId, schema.organizations.id),
-                  eq(schema.organizationMemberships.userId, editorUserId),
-                  eq(schema.organizationMemberships.role, "organization_admin"),
-                ),
               )
               .where(and(...conditions))
               .orderBy(desc(schema.submissions.updatedAt));
@@ -197,6 +251,7 @@ export function createPostgresEditorialRepository<
                 and(
                   eq(schema.reviewerAssignments.reviewerUserId, reviewerUserId),
                   eq(schema.reviewerAssignments.submissionId, submissionId),
+                  isNull(schema.reviewerAssignments.unassignedAt),
                 ),
               )
               .limit(1);
@@ -204,29 +259,7 @@ export function createPostgresEditorialRepository<
             if (!assignment[0]) return null;
 
             const submission = await tx
-              .select({
-                id: schema.submissions.id,
-                organizationId: schema.organizations.id,
-                journalId: schema.submissions.journalId,
-                organizationName: schema.organizations.name,
-                organizationSlug: schema.organizations.slug,
-                journalTitle: schema.journals.title,
-                journalSlug: schema.journals.slug,
-                title: schema.submissions.title,
-                abstract: schema.submissions.abstract,
-                keywords: schema.submissions.keywords,
-                status: schema.submissions.status,
-                createdBy: schema.submissions.createdBy,
-                createdAt: schema.submissions.createdAt,
-                updatedAt: schema.submissions.updatedAt,
-                submittedAt: schema.submissions.submittedAt,
-                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-                currentManuscriptVersion: sql<number>`(
-                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-                  FROM ${schema.submissionManuscripts}
-                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-                )`.as("currentManuscriptVersion"),
-              })
+              .select(submissionSelection)
               .from(schema.submissions)
               .innerJoin(
                 schema.journals,
@@ -257,50 +290,19 @@ export function createPostgresEditorialRepository<
                 updatedAt: now,
                 ...(pass ? {} : { rejectedAt: now, rejectionReason: reason }),
               })
-              .where(
-                and(
-                  eq(schema.submissions.id, submissionId),
-                  eq(schema.submissions.createdBy, editorUserId),
-                ),
-              )
-              .returning({
-                id: schema.submissions.id,
-                organizationId: schema.organizations.id,
-                journalId: schema.submissions.journalId,
-                organizationName: schema.organizations.name,
-                organizationSlug: schema.organizations.slug,
-                journalTitle: schema.journals.title,
-                journalSlug: schema.journals.slug,
-                title: schema.submissions.title,
-                abstract: schema.submissions.abstract,
-                keywords: schema.submissions.keywords,
-                status: schema.submissions.status,
-                createdBy: schema.submissions.createdBy,
-                createdAt: schema.submissions.createdAt,
-                updatedAt: schema.submissions.updatedAt,
-                submittedAt: schema.submissions.submittedAt,
-                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-                currentManuscriptVersion: sql<number>`(
-                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-                  FROM ${schema.submissionManuscripts}
-                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-                )`.as("currentManuscriptVersion"),
-              })
-              .from(schema.submissions)
-              .innerJoin(
-                schema.journals,
-                eq(schema.journals.id, schema.submissions.journalId),
-              )
-              .innerJoin(
-                schema.organizations,
-                eq(schema.organizations.id, schema.journals.organizationId),
-              );
+              .where(eq(schema.submissions.id, submissionId))
+              .returning({ id: schema.submissions.id });
 
             if (!updated) {
               throw new Error("Submission not found");
             }
 
-            return mapSubmissionRow(updated);
+            const row = await selectSubmissionRowById(submissionId);
+            if (!row) {
+              throw new Error("Submission not found");
+            }
+
+            return mapSubmissionRow(row);
           },
 
           async assignReviewer(input: AssignReviewerInput) {
@@ -441,44 +443,18 @@ export function createPostgresEditorialRepository<
                 revisionReason: reason,
               })
               .where(eq(schema.submissions.id, submissionId))
-              .returning({
-                id: schema.submissions.id,
-                organizationId: schema.organizations.id,
-                journalId: schema.submissions.journalId,
-                organizationName: schema.organizations.name,
-                organizationSlug: schema.organizations.slug,
-                journalTitle: schema.journals.title,
-                journalSlug: schema.journals.slug,
-                title: schema.submissions.title,
-                abstract: schema.submissions.abstract,
-                keywords: schema.submissions.keywords,
-                status: schema.submissions.status,
-                createdBy: schema.submissions.createdBy,
-                createdAt: schema.submissions.createdAt,
-                updatedAt: schema.submissions.updatedAt,
-                submittedAt: schema.submissions.submittedAt,
-                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-                currentManuscriptVersion: sql<number>`(
-                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-                  FROM ${schema.submissionManuscripts}
-                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-                )`.as("currentManuscriptVersion"),
-              })
-              .from(schema.submissions)
-              .innerJoin(
-                schema.journals,
-                eq(schema.journals.id, schema.submissions.journalId),
-              )
-              .innerJoin(
-                schema.organizations,
-                eq(schema.organizations.id, schema.journals.organizationId),
-              );
+              .returning({ id: schema.submissions.id });
 
             if (!updated) {
               throw new Error("Submission not found");
             }
 
-            return mapSubmissionRow(updated);
+            const row = await selectSubmissionRowById(submissionId);
+            if (!row) {
+              throw new Error("Submission not found");
+            }
+
+            return mapSubmissionRow(row);
           },
 
           async recordDecision(input: RecordDecisionInput) {
@@ -551,44 +527,18 @@ export function createPostgresEditorialRepository<
                   eq(schema.submissions.createdBy, authorUserId),
                 ),
               )
-              .returning({
-                id: schema.submissions.id,
-                organizationId: schema.organizations.id,
-                journalId: schema.submissions.journalId,
-                organizationName: schema.organizations.name,
-                organizationSlug: schema.organizations.slug,
-                journalTitle: schema.journals.title,
-                journalSlug: schema.journals.slug,
-                title: schema.submissions.title,
-                abstract: schema.submissions.abstract,
-                keywords: schema.submissions.keywords,
-                status: schema.submissions.status,
-                createdBy: schema.submissions.createdBy,
-                createdAt: schema.submissions.createdAt,
-                updatedAt: schema.submissions.updatedAt,
-                submittedAt: schema.submissions.submittedAt,
-                submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-                currentManuscriptVersion: sql<number>`(
-                  SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-                  FROM ${schema.submissionManuscripts}
-                  WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-                )`.as("currentManuscriptVersion"),
-              })
-              .from(schema.submissions)
-              .innerJoin(
-                schema.journals,
-                eq(schema.journals.id, schema.submissions.journalId),
-              )
-              .innerJoin(
-                schema.organizations,
-                eq(schema.organizations.id, schema.journals.organizationId),
-              );
+              .returning({ id: schema.submissions.id });
 
             if (!updated) {
               throw new Error("Submission not found or access denied");
             }
 
-            return mapSubmissionRow(updated);
+            const row = await selectSubmissionRowById(submissionId);
+            if (!row) {
+              throw new Error("Submission not found or access denied");
+            }
+
+            return mapSubmissionRow(row);
           },
 
           async insertAuditEvent(event) {
@@ -791,182 +741,168 @@ export function createPostgresEditorialRepository<
     },
 
     async findSubmissionForEditor(editorUserId, submissionId) {
-      return database.transaction(async (tx) => {
-        const rows = await tx
-          .select({
-            id: schema.submissions.id,
-            organizationId: schema.organizations.id,
-            journalId: schema.submissions.journalId,
-            organizationName: schema.organizations.name,
-            organizationSlug: schema.organizations.slug,
-            journalTitle: schema.journals.title,
-            journalSlug: schema.journals.slug,
-            title: schema.submissions.title,
-            abstract: schema.submissions.abstract,
-            keywords: schema.submissions.keywords,
-            status: schema.submissions.status,
-            createdBy: schema.submissions.createdBy,
-            createdAt: schema.submissions.createdAt,
-            updatedAt: schema.submissions.updatedAt,
-            submittedAt: schema.submissions.submittedAt,
-            submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-            currentManuscriptVersion: sql<number>`(
-              SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-              FROM ${schema.submissionManuscripts}
-              WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-            )`.as("currentManuscriptVersion"),
-          })
-          .from(schema.submissions)
-          .innerJoin(
-            schema.journals,
-            eq(schema.journals.id, schema.submissions.journalId),
-          )
-          .innerJoin(
-            schema.organizations,
-            eq(schema.organizations.id, schema.journals.organizationId),
-          )
-          .innerJoin(
-            schema.organizationMemberships,
-            and(
-              eq(schema.organizationMemberships.organizationId, schema.organizations.id),
-              eq(schema.organizationMemberships.userId, editorUserId),
-              eq(schema.organizationMemberships.role, "organization_admin"),
-            ),
-          )
-          .where(eq(schema.submissions.id, submissionId))
-          .limit(1);
+      const rows = await database
+        .select(submissionSelection)
+        .from(schema.submissions)
+        .innerJoin(
+          schema.journals,
+          eq(schema.journals.id, schema.submissions.journalId),
+        )
+        .innerJoin(
+          schema.organizations,
+          eq(schema.organizations.id, schema.journals.organizationId),
+        )
+        .where(and(eq(schema.submissions.id, submissionId), editorialAccessCondition(editorUserId)))
+        .limit(1);
 
-        return rows[0] ? mapSubmissionRow(rows[0]) : null;
-      });
+      return rows[0] ? mapSubmissionRow(rows[0]) : null;
+    },
+
+    async findSubmissionForAuthor(authorUserId, submissionId) {
+      const rows = await database
+        .select(submissionSelection)
+        .from(schema.submissions)
+        .innerJoin(
+          schema.journals,
+          eq(schema.journals.id, schema.submissions.journalId),
+        )
+        .innerJoin(
+          schema.organizations,
+          eq(schema.organizations.id, schema.journals.organizationId),
+        )
+        .where(
+          and(
+            eq(schema.submissions.id, submissionId),
+            eq(schema.submissions.createdBy, authorUserId),
+          ),
+        )
+        .limit(1);
+
+      return rows[0] ? mapSubmissionRow(rows[0]) : null;
     },
 
     async listSubmissionsForEditor(editorUserId, journalId, statuses) {
-      return database.transaction(async (tx) => {
-        const conditions = [
-          eq(schema.journals.id, journalId),
-          eq(schema.organizationMemberships.userId, editorUserId),
-          eq(schema.organizationMemberships.role, "organization_admin"),
-        ];
+      const conditions = [
+        eq(schema.journals.id, journalId),
+        editorialAccessCondition(editorUserId),
+      ];
 
-        if (statuses && statuses.length > 0) {
-          conditions.push(inArray(schema.submissions.status, statuses));
-        }
+      if (statuses && statuses.length > 0) {
+        conditions.push(inArray(schema.submissions.status, statuses));
+      }
 
-        const rows = await tx
-          .select({
-            id: schema.submissions.id,
-            organizationId: schema.organizations.id,
-            journalId: schema.submissions.journalId,
-            organizationName: schema.organizations.name,
-            organizationSlug: schema.organizations.slug,
-            journalTitle: schema.journals.title,
-            journalSlug: schema.journals.slug,
-            title: schema.submissions.title,
-            abstract: schema.submissions.abstract,
-            keywords: schema.submissions.keywords,
-            status: schema.submissions.status,
-            createdBy: schema.submissions.createdBy,
-            createdAt: schema.submissions.createdAt,
-            updatedAt: schema.submissions.updatedAt,
-            submittedAt: schema.submissions.submittedAt,
-            submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-            currentManuscriptVersion: sql<number>`(
-              SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-              FROM ${schema.submissionManuscripts}
-              WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-            )`.as("currentManuscriptVersion"),
-          })
-          .from(schema.submissions)
-          .innerJoin(
-            schema.journals,
-            eq(schema.journals.id, schema.submissions.journalId),
-          )
-          .innerJoin(
-            schema.organizations,
-            eq(schema.organizations.id, schema.journals.organizationId),
-          )
-          .innerJoin(
-            schema.organizationMemberships,
-            and(
-              eq(schema.organizationMemberships.organizationId, schema.organizations.id),
-              eq(schema.organizationMemberships.userId, editorUserId),
-              eq(schema.organizationMemberships.role, "organization_admin"),
-            ),
-          )
-          .where(and(...conditions))
-          .orderBy(desc(schema.submissions.updatedAt));
+      const rows = await database
+        .select(submissionSelection)
+        .from(schema.submissions)
+        .innerJoin(
+          schema.journals,
+          eq(schema.journals.id, schema.submissions.journalId),
+        )
+        .innerJoin(
+          schema.organizations,
+          eq(schema.organizations.id, schema.journals.organizationId),
+        )
+        .where(and(...conditions))
+        .orderBy(desc(schema.submissions.updatedAt));
 
-        return rows.map(mapSubmissionRow);
-      });
+      return rows.map(mapSubmissionRow);
     },
 
     async getSubmissionDetailForEditor(editorUserId, submissionId) {
-      return database.transaction(async (tx) => {
-        const submission = await this.findSubmissionForEditor(editorUserId, submissionId);
-        if (!submission) return null;
+      const submission = await this.findSubmissionForEditor(editorUserId, submissionId);
+      if (!submission) return null;
 
-        // We need to run the detailed query inside the same transaction
-        // For now, we'll do a separate query - in production this should be optimized
-        const detail = await buildSubmissionDetail(database, submissionId, submission.organizationId);
-        return detail;
-      });
+      return buildSubmissionDetail(database, submissionId, submission.organizationId);
+    },
+
+    async findAssignment(assignmentId) {
+      const [assignment] = await database
+        .select({
+          assignmentId: schema.reviewerAssignments.id,
+          submissionId: schema.reviewerAssignments.submissionId,
+          reviewerUserId: schema.reviewerAssignments.reviewerUserId,
+        })
+        .from(schema.reviewerAssignments)
+        .where(eq(schema.reviewerAssignments.id, assignmentId))
+        .limit(1);
+
+      return assignment ?? null;
+    },
+
+    async getManuscriptForReviewer(reviewerUserId, submissionId, manuscriptId) {
+      const [assignment] = await database
+        .select({ id: schema.reviewerAssignments.id })
+        .from(schema.reviewerAssignments)
+        .where(
+          and(
+            eq(schema.reviewerAssignments.reviewerUserId, reviewerUserId),
+            eq(schema.reviewerAssignments.submissionId, submissionId),
+            isNull(schema.reviewerAssignments.unassignedAt),
+          ),
+        )
+        .limit(1);
+
+      if (!assignment) return null;
+
+      const [manuscript] = await database
+        .select({
+          id: schema.submissionManuscripts.id,
+          submissionId: schema.submissionManuscripts.submissionId,
+          version: schema.submissionManuscripts.version,
+          contentType: schema.submissionManuscripts.contentType,
+          byteSize: schema.submissionManuscripts.byteSize,
+          sha256: schema.submissionManuscripts.sha256,
+          storageKey: schema.submissionManuscripts.storageKey,
+        })
+        .from(schema.submissionManuscripts)
+        .where(
+          and(
+            eq(schema.submissionManuscripts.id, manuscriptId),
+            eq(schema.submissionManuscripts.submissionId, submissionId),
+          ),
+        )
+        .limit(1);
+
+      if (!manuscript) return null;
+
+      return {
+        ...manuscript,
+        contentType: "application/pdf" as const,
+      };
     },
 
     async getSubmissionDetailForReviewer(reviewerUserId, submissionId) {
-      return database.transaction(async (tx) => {
-        const assignment = await tx
-          .select({ id: schema.reviewerAssignments.id })
-          .from(schema.reviewerAssignments)
-          .where(
-            and(
-              eq(schema.reviewerAssignments.reviewerUserId, reviewerUserId),
-              eq(schema.reviewerAssignments.submissionId, submissionId),
-            ),
-          )
-          .limit(1);
+      const assignment = await database
+        .select({ id: schema.reviewerAssignments.id })
+        .from(schema.reviewerAssignments)
+        .where(
+          and(
+            eq(schema.reviewerAssignments.reviewerUserId, reviewerUserId),
+            eq(schema.reviewerAssignments.submissionId, submissionId),
+            isNull(schema.reviewerAssignments.unassignedAt),
+          ),
+        )
+        .limit(1);
 
-        if (!assignment[0]) return null;
+      if (!assignment[0]) return null;
 
-        const submission = await tx
-          .select({
-            id: schema.submissions.id,
-            organizationId: schema.organizations.id,
-            journalId: schema.submissions.journalId,
-            organizationName: schema.organizations.name,
-            organizationSlug: schema.organizations.slug,
-            journalTitle: schema.journals.title,
-            journalSlug: schema.journals.slug,
-            title: schema.submissions.title,
-            abstract: schema.submissions.abstract,
-            keywords: schema.submissions.keywords,
-            status: schema.submissions.status,
-            createdBy: schema.submissions.createdBy,
-            createdAt: schema.submissions.createdAt,
-            updatedAt: schema.submissions.updatedAt,
-            submittedAt: schema.submissions.submittedAt,
-            submittedManuscriptVersion: schema.submissions.submittedManuscriptVersion,
-            currentManuscriptVersion: sql<number>`(
-              SELECT COALESCE(MAX(${schema.submissionManuscripts.version}), 0)
-              FROM ${schema.submissionManuscripts}
-              WHERE ${schema.submissionManuscripts.submissionId} = ${schema.submissions.id}
-            )`.as("currentManuscriptVersion"),
-          })
-          .from(schema.submissions)
-          .innerJoin(
-            schema.journals,
-            eq(schema.journals.id, schema.submissions.journalId),
-          )
-          .innerJoin(
-            schema.organizations,
-            eq(schema.organizations.id, schema.journals.organizationId),
-          )
-          .where(eq(schema.submissions.id, submissionId))
-          .limit(1);
+      const submission = await database
+        .select(submissionSelection)
+        .from(schema.submissions)
+        .innerJoin(
+          schema.journals,
+          eq(schema.journals.id, schema.submissions.journalId),
+        )
+        .innerJoin(
+          schema.organizations,
+          eq(schema.organizations.id, schema.journals.organizationId),
+        )
+        .where(eq(schema.submissions.id, submissionId))
+        .limit(1);
 
-        if (!submission[0]) return null;
+      if (!submission[0]) return null;
 
-        return buildSubmissionDetail(database, submission[0].id, submission[0].organizationId);
-      });
+      return buildSubmissionDetail(database, submission[0].id, submission[0].organizationId);
     },
   };
 }

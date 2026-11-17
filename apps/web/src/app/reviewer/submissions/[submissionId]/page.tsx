@@ -152,11 +152,11 @@ export default async function ReviewerSubmissionDetailPage({ params }: PageProps
               <dl className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <dt className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Submitted manuscript version</dt>
-                  <dd className="mt-1 font-semibold text-ink">{detail.submittedManuscriptVersion ?? "—"}</dd>
+                  <dd className="mt-1 font-semibold text-ink">{detail.submittedManuscriptVersion ?? "Not available"}</dd>
                 </div>
                 <div>
                   <dt className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Current manuscript version</dt>
-                  <dd className="mt-1 font-semibold text-ink">{detail.currentManuscriptVersion ?? "—"}</dd>
+                  <dd className="mt-1 font-semibold text-ink">{detail.currentManuscriptVersion ?? "Not available"}</dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Abstract</dt>
@@ -192,8 +192,8 @@ export default async function ReviewerSubmissionDetailPage({ params }: PageProps
                         </p>
                       </div>
                       <a
-                        className="inline-flex min-h-10 items-center rounded-full border border-line px-4 text-sm font-semibold text-forest transition-colors hover:bg-forest/5"
-                        href={`/api/author/submissions/${detail.id}/manuscripts/${manuscript.id}`}
+                        className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-forest transition-colors hover:bg-forest/5"
+                        href={`/api/reviewer/submissions/${detail.id}/manuscripts/${manuscript.id}`}
                       >
                         Download
                       </a>
@@ -211,7 +211,7 @@ export default async function ReviewerSubmissionDetailPage({ params }: PageProps
                 <p className="mt-2 text-sm text-muted">
                   Complete your review by providing a recommendation and comments.
                 </p>
-                <form className="mt-6 space-y-5" action="/api/reviewer/submissions/[submissionId]/review" method="POST">
+                <form className="mt-6 space-y-5" action={`/api/reviewer/submissions/${detail.id}/review`} method="POST">
                   <input type="hidden" name="submissionId" value={detail.id} />
                   <input type="hidden" name="assignmentId" value={assignment.id} />
                   

@@ -10,6 +10,8 @@ apps/web/update-*.ts
 apps/web/scripts/seed-journals.mjs
 apps/web/lint.txt
 
+/skills
+
 # Next.js
 **/.next/
 **/out/

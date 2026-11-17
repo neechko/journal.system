@@ -209,7 +209,7 @@ export default async function EditSubmissionDraftPage({
                   </div>
                   {localStorageEnabled ? (
                     <Link
-                      className="inline-flex min-h-10 items-center text-sm font-semibold text-forest underline decoration-forest/30 underline-offset-4 hover:decoration-forest"
+                      className="inline-flex min-h-11 items-center text-sm font-semibold text-forest underline decoration-forest/30 underline-offset-4 hover:decoration-forest"
                       href={`/api/author/submissions/${submission.id}/manuscripts/${manuscript.id}`}
                     >
                       Download

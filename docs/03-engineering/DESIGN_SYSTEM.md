@@ -1,7 +1,11 @@
 # Design System and Product UX
 
 **Status:** Proposed baseline  
-**Last reviewed:** 2026-11-15
+**Last reviewed:** 2026-11-18
+
+Arah visual dan alasan keputusan ada di `../../DESIGN.md`. Dokumen ini mencatat
+prinsip implementasi; status komponen saat ini tidak otomatis memenuhi semua gate
+antislop atau WCAG.
 
 ## 1. Product experience goals
 
@@ -45,9 +49,10 @@ bahwa target aksesibilitas telah tercapai.
 - Area publik menggunakan pola discovery-first dengan navigasi jurnal,
   pencarian katalog, profil jurnal, dan status fitur yang tersedia atau belum
   tersedia.
-- Token visual awal memakai latar paper, teks ink, forest untuk aksi utama,
-  lime/coral sebagai aksen, tipografi sans-serif untuk isi, dan serif untuk
-  judul editorial.
+- Token visual awal memakai latar paper dan teks ink. Nama token `forest`,
+  `lime`, dan `coral` adalah warisan implementasi, bukan identitas merek final.
+  Warna jurnal tidak boleh diturunkan dari nama disiplin atau warna penerbit
+  referensi. UI memakai sans sistem; judul dan teks editorial memakai serif.
 - Header dan footer publik dipakai bersama oleh beranda, katalog, dan profil
   jurnal. Workspace pengelola memakai token yang sama dengan navigasi privat
   tersendiri; authorization dan guard tetap berada di server.

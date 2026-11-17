@@ -37,6 +37,15 @@
 
 Jangan menyatakan integrasi aktif hanya karena field atau tombol UI sudah ada.
 
+DOI registration is currently disabled in the application use case. The
+existing XML helper and `doi_registration` table are preparation only; they
+do not prove a Crossref deposit or resolver verification. A later implementation
+must record deposit attempts and provider responses, require human approval,
+and expose distinct pending, accepted, and verified states before using the
+word "registered" in an audit event or public page.
+Public article, issue, and journal reads currently omit stored DOI values
+because the schema cannot distinguish an assigned string from a verified DOI.
+
 ## 5. Development-only manuscript attachment slice
 
 The current author draft prototype accepts versioned PDF attachments through an
@@ -84,4 +93,4 @@ description is limited to 2,000 characters. Updates to a published journal
 appear on its public profile and directory after revalidation. This action does
 not change the journal title, slug, or publication state.
 
-**Last reviewed:** 2026-11-15
+**Last reviewed:** 2026-11-18

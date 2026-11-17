@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { AppError } from "@/modules/shared/app-error";
-import type { TenancyRepository } from "@/modules/tenancy/application/ports";
-import { getOrganizationWorkspace } from "@/modules/tenancy/application/use-cases";
+import type { JournalRole, TenancyRepository } from "@/modules/tenancy/application/ports";
+import { getJournalAccess } from "@/modules/tenancy/application/use-cases";
 import type {
   ProductionRepository,
   ProductionTransaction,
@@ -14,7 +14,6 @@ import type {
   UpdateIssueInput,
   TransitionIssueStatusInput,
   AddArticleToIssueInput,
-  RegisterDoiInput,
   ProductionSubmission,
   ArticleVersion,
   Volume,
@@ -38,22 +37,24 @@ import {
   type Volume as DomainVolume,
   type Issue as DomainIssue,
 } from "../domain/issue-volume";
-import {
-  createDoiRegistration,
-  buildCrossrefXml,
-  type DoiRegistration,
-} from "../domain/doi";
+
+const PRODUCTION_ROLES: JournalRole[] = [
+  "organization_admin",
+  "editor_in_chief",
+  "managing_editor",
+  "production_editor",
+];
 
 async function assertProductionAccess(
   tenancyRepository: TenancyRepository,
   userId: string,
   journalId: string
 ): Promise<string> {
-  const workspace = await getOrganizationWorkspace(tenancyRepository, userId, journalId);
-  if (!workspace) {
+  const access = await getJournalAccess(tenancyRepository, userId, journalId);
+  if (!access || !access.roles.some((role) => PRODUCTION_ROLES.includes(role))) {
     throw new AppError("FORBIDDEN", "Production access denied for this journal.");
   }
-  return workspace.organization.id;
+  return access.organizationId;
 }
 
 async function assertProductionAccessBySubmission(
@@ -286,7 +287,7 @@ export async function createVolumeUseCase(
 ): Promise<Volume> {
   const { journalId, number, year, label } = input;
 
-  await assertProductionAccess(tenancyRepository, actorUserId, journalId);
+  const organizationId = await assertProductionAccess(tenancyRepository, actorUserId, journalId);
 
   const existing = await repository.listVolumesForJournal(journalId);
   if (existing.some((v) => v.number === number)) {
@@ -299,7 +300,7 @@ export async function createVolumeUseCase(
     const created = await tx.createVolume(journalId, number, year, label ?? null);
 
     await tx.insertAuditEvent({
-      organizationId: (await tx.findSubmissionForProduction(actorUserId, ""))?.organizationId ?? "",
+      organizationId,
       actorUserId,
       action: "volume.created",
       entityType: "volume",
@@ -324,7 +325,7 @@ export async function createIssueUseCase(
 ): Promise<Issue> {
   const { journalId, number, year, volumeId, label, description } = input;
 
-  await assertProductionAccess(tenancyRepository, actorUserId, journalId);
+  const organizationId = await assertProductionAccess(tenancyRepository, actorUserId, journalId);
 
   if (volumeId) {
     const volume = await repository.findVolume(volumeId);
@@ -344,7 +345,7 @@ export async function createIssueUseCase(
     const created = await tx.createIssue(journalId, number, year, { volumeId, label, description });
 
     await tx.insertAuditEvent({
-      organizationId: (await tx.findSubmissionForProduction(actorUserId, ""))?.organizationId ?? "",
+      organizationId,
       actorUserId,
       action: "issue.created",
       entityType: "issue",
@@ -374,7 +375,7 @@ export async function updateIssueUseCase(
     throw new AppError("NOT_FOUND", "Issue not found.");
   }
 
-  await assertProductionAccess(tenancyRepository, actorUserId, issue.journalId);
+  const organizationId = await assertProductionAccess(tenancyRepository, actorUserId, issue.journalId);
 
   if (!canModifyIssue(issue)) {
     throw new AppError("INVALID_STATE", "Cannot modify issue in current state.");
@@ -384,7 +385,7 @@ export async function updateIssueUseCase(
     const updated = await tx.updateIssue(issueId, updates);
 
     await tx.insertAuditEvent({
-      organizationId: (await tx.findSubmissionForProduction(actorUserId, ""))?.organizationId ?? "",
+      organizationId,
       actorUserId,
       action: "issue.updated",
       entityType: "issue",
@@ -413,7 +414,7 @@ export async function transitionIssueStatusUseCase(
     throw new AppError("NOT_FOUND", "Issue not found.");
   }
 
-  await assertProductionAccess(tenancyRepository, actorUserId, issue.journalId);
+  const organizationId = await assertProductionAccess(tenancyRepository, actorUserId, issue.journalId);
 
   const oldStatus = issue.status;
   const updatedIssue = transitionIssueStatus(issue, newStatus, actorUserId);
@@ -422,7 +423,7 @@ export async function transitionIssueStatusUseCase(
     const updated = await tx.transitionIssueStatus(issueId, newStatus, actorUserId);
 
     await tx.insertAuditEvent({
-      organizationId: (await tx.findSubmissionForProduction(actorUserId, ""))?.organizationId ?? "",
+      organizationId,
       actorUserId,
       action: `issue.status_${newStatus}`,
       entityType: "issue",
@@ -457,7 +458,7 @@ export async function addArticleToIssueUseCase(
     throw new AppError("NOT_FOUND", "Issue not found.");
   }
 
-  await assertProductionAccess(tenancyRepository, actorUserId, issue.journalId);
+  const organizationId = await assertProductionAccess(tenancyRepository, actorUserId, issue.journalId);
 
   if (article.status !== "proof_approved" && article.status !== "published") {
     throw new AppError("INVALID_STATE", "Only proof-approved or published articles can be added to an issue.");
@@ -471,7 +472,7 @@ export async function addArticleToIssueUseCase(
     await tx.addArticleToIssue(articleId, issueId, { pageStart, pageEnd, order, articleType });
 
     await tx.insertAuditEvent({
-      organizationId: (await tx.findSubmissionForProduction(actorUserId, ""))?.organizationId ?? "",
+      organizationId,
       actorUserId,
       action: "issue.article_added",
       entityType: "issue",
@@ -486,78 +487,11 @@ export async function addArticleToIssueUseCase(
   });
 }
 
-export async function registerDoiUseCase(
-  repository: ProductionRepository,
-  tenancyRepository: TenancyRepository,
-  actorUserId: string,
-  input: RegisterDoiInput
-): Promise<string> {
-  const { articleId, prefix, title, authors, publicationDate, journalTitle, journalIssn, journalIssnElectronic, volume, issue, pageStart, pageEnd, articleType, url, license } = input;
-
-  const article = await repository.findArticleVersion(articleId);
-  if (!article) {
-    throw new AppError("NOT_FOUND", "Article version not found.");
-  }
-
-  const submission = await repository.findSubmissionForProduction(actorUserId, article.submissionId);
-  if (!submission) {
-    throw new AppError("FORBIDDEN", "Access denied to this article.");
-  }
-
-  await assertProductionAccessBySubmission(tenancyRepository, actorUserId, submission);
-
-  if (article.doi) {
-    throw new AppError("CONFLICT", "Article already has a DOI.");
-  }
-
-  const doiSuffix = generateDoiSuffix(articleId);
-  const doi = `10.${prefix}/${doiSuffix}`;
-
-  const registration = createDoiRegistration(
-    {
-      id: articleId,
-      title,
-      authors: authors.map((a) => ({
-        name: `${a.givenName} ${a.familyName}`,
-        orcid: (a.orcid ?? null) as string | null,
-        affiliation: (a.affiliation ?? null) as string | null,
-        isCorresponding: a.sequence === "first",
-        order: a.sequence === "first" ? 1 : 2,
-      })),
-      publishedAt: new Date(publicationDate),
-      journal: { title: journalTitle, issnPrint: (journalIssn ?? null) as string | null, issnElectronic: (journalIssnElectronic ?? null) as string | null },
-      volume: volume ? { number: parseInt(volume), year: new Date(publicationDate).getFullYear() } : null,
-      issue: issue ? { number: parseInt(issue), year: new Date(publicationDate).getFullYear() } : null,
-      pageStart: pageStart ? parseInt(pageStart) : null,
-      pageEnd: pageEnd ? parseInt(pageEnd) : null,
-      articleType,
-      url,
-      license: (license ?? null) as string | null,
-    },
-    prefix
+export async function registerDoiUseCase(): Promise<never> {
+  throw new AppError(
+    "INVALID_STATE",
+    "DOI registration is unavailable until an approved deposit and verification flow exists.",
   );
-
-  const xml = buildCrossrefXml(registration);
-
-  return repository.transaction(async (tx) => {
-    await tx.registerDoi(articleId, registration);
-
-    await tx.insertAuditEvent({
-      organizationId: submission.organizationId,
-      actorUserId,
-      action: "article_version.doi_registered",
-      entityType: "doi",
-      entityId: doi,
-      reason: `Registered DOI with Crossref: ${doi}`,
-      actorType: "human",
-      stateBefore: null,
-      stateAfter: "registered",
-      source: "production_workspace",
-      correlationId: null,
-    });
-
-    return doi;
-  });
 }
 
 export async function listAcceptedSubmissionsUseCase(
@@ -580,4 +514,3 @@ export async function getArticleWithIssueUseCase(
 // Re-export domain helpers
 import { canEditArticle, isArticleReadyForPublication } from "../domain/article-version";
 import { canModifyIssue } from "../domain/issue-volume";
-import { generateDoiSuffix } from "../domain/doi";

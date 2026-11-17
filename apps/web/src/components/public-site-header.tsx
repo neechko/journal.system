@@ -6,23 +6,13 @@ export function PublicSiteHeader() {
     <header className="sticky top-0 z-30 border-b border-line/80 bg-paper/95 backdrop-blur">
       <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-5 px-5 sm:px-8">
         <Link
-          aria-label="Scholarly Publishing Platform — home"
-          className="flex min-w-0 items-center gap-3"
+          aria-label="Scholarly Publishing Platform home"
+          className="flex min-h-11 min-w-0 items-center"
           href="/"
         >
-          <span
-            aria-hidden="true"
-            className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-forest"
-          >
-            <span className="absolute left-2.5 top-2.5 size-4 rounded-sm border border-lime" />
-            <span className="absolute bottom-2.5 right-2.5 size-4 rounded-sm bg-coral" />
-          </span>
           <span className="min-w-0 leading-tight">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
-              PLATFORM
-            </span>
-            <span className="block truncate text-sm font-semibold text-ink sm:text-base">
-              Scholarly Publishing
+            <span className="block truncate font-display text-base font-semibold text-ink sm:text-lg">
+              Scholarly Publishing Platform
             </span>
           </span>
         </Link>
@@ -31,17 +21,17 @@ export function PublicSiteHeader() {
           aria-label="Main navigation"
           className="hidden items-center gap-8 text-sm font-medium text-ink md:flex"
         >
-          <Link className="transition-colors hover:text-forest" href="/journals">
+          <Link className="inline-flex min-h-11 items-center transition-colors hover:text-forest" href="/journals">
             Journals
           </Link>
           <Link
-            className="transition-colors hover:text-forest"
+            className="inline-flex min-h-11 items-center transition-colors hover:text-forest"
             href="/#platform"
           >
             About the platform
           </Link>
           <Link
-            className="transition-colors hover:text-forest"
+            className="inline-flex min-h-11 items-center transition-colors hover:text-forest"
             href="/admin/organizations"
           >
             For publishers
@@ -51,7 +41,7 @@ export function PublicSiteHeader() {
         <ThemeSwitcher />
 
         <details className="relative md:hidden">
-          <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-semibold text-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-paper px-4 text-sm font-semibold text-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest [&::-webkit-details-marker]:hidden">
             Menu
             <svg
               aria-hidden="true"
@@ -93,10 +83,10 @@ export function PublicSiteHeader() {
         </details>
 
         <Link
-          className="hidden min-h-10 shrink-0 items-center justify-center rounded-full bg-forest px-5 text-sm font-semibold text-white transition-colors hover:bg-forest-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest md:inline-flex"
+          className="hidden min-h-11 shrink-0 items-center justify-center rounded-lg bg-forest px-5 text-sm font-semibold text-white transition-colors hover:bg-forest-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest md:inline-flex"
           href="/journals"
         >
-          Explore journals
+          Journal directory
           <svg
             aria-hidden="true"
             className="ml-2 size-4"

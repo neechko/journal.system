@@ -58,6 +58,22 @@ export interface SubmissionManuscript {
   uploadedAt: Date;
 }
 
+export interface ReviewerAssignmentReference {
+  assignmentId: string;
+  submissionId: string;
+  reviewerUserId: string;
+}
+
+export interface ReviewerManuscriptFile {
+  id: string;
+  submissionId: string;
+  version: number;
+  contentType: "application/pdf";
+  byteSize: number;
+  sha256: string;
+  storageKey: string;
+}
+
 export interface EditorialAuditEvent {
   id: string;
   organizationId: string | null;
@@ -172,6 +188,11 @@ export interface EditorialTransaction {
     submissionId: string
   ): Promise<EditorialSubmissionDetail | null>;
 
+  findSubmissionForAuthor(
+    authorUserId: string,
+    submissionId: string
+  ): Promise<EditorialSubmission | null>;
+
   screenSubmission(input: ScreeningInput): Promise<EditorialSubmission>;
   assignReviewer(input: AssignReviewerInput): Promise<ReviewerAssignment>;
   unassignReviewer(input: UnassignReviewerInput): Promise<ReviewerAssignment>;
@@ -206,4 +227,28 @@ export interface EditorialRepository {
     reviewerUserId: string,
     submissionId: string
   ): Promise<EditorialSubmissionDetail | null>;
+
+  /**
+   * Resolves an assignment to its submission. Used because most reviewer and
+   * editorial actions are addressed by assignment id, not submission id.
+   */
+  findAssignment(
+    assignmentId: string
+  ): Promise<ReviewerAssignmentReference | null>;
+
+  findSubmissionForAuthor(
+    authorUserId: string,
+    submissionId: string
+  ): Promise<EditorialSubmission | null>;
+
+  /**
+   * Returns the stored private object for a manuscript the reviewer is
+   * currently assigned to. Returns null for unknown, unassigned, or
+   * cross-submission manuscript ids.
+   */
+  getManuscriptForReviewer(
+    reviewerUserId: string,
+    submissionId: string,
+    manuscriptId: string
+  ): Promise<ReviewerManuscriptFile | null>;
 }

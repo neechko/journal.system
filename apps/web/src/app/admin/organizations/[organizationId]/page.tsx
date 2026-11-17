@@ -62,7 +62,7 @@ export default async function OrganizationWorkspacePage({
         </nav>
 
         <header className="mt-8 rounded-[1.75rem] bg-forest px-6 py-8 text-white sm:px-9 sm:py-10">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-lime">
+          <p className="text-sm font-semibold text-white">
             Organization workspace
           </p>
           <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -70,13 +70,13 @@ export default async function OrganizationWorkspacePage({
               <h1 className="font-display text-4xl leading-tight tracking-tight sm:text-5xl">
                 {workspace.organization.name}
               </h1>
-              <p className="mt-3 text-sm text-white/70">
+              <p className="mt-3 text-sm text-white">
                 /{workspace.organization.slug}
               </p>
             </div>
             <dl className="grid grid-cols-2 gap-3 sm:w-fit">
               <div className="min-w-32 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-white/65">
+                <dt className="text-xs font-semibold text-white">
                   Total journals
                 </dt>
                 <dd className="mt-1 text-xl font-semibold text-white">
@@ -84,7 +84,7 @@ export default async function OrganizationWorkspacePage({
                 </dd>
               </div>
               <div className="min-w-32 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
-                <dt className="text-[10px] font-semibold uppercase tracking-wide text-white/65">
+                <dt className="text-xs font-semibold text-white">
                   Published
                 </dt>
                 <dd className="mt-1 text-xl font-semibold text-white">
@@ -162,7 +162,7 @@ export default async function OrganizationWorkspacePage({
 
                         {isPublished ? (
                           <Link
-                            className="mt-5 inline-flex min-h-10 items-center rounded-full border border-line px-4 text-sm font-semibold text-forest transition-colors hover:border-forest"
+                            className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-forest transition-colors hover:border-forest"
                             href={`/journals/${workspace.organization.slug}/${journal.slug}`}
                           >
                             View public page

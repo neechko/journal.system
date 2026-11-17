@@ -10,7 +10,7 @@ export * from './motion';
 export * from './breakpoints';
 
 // Re-export types from each module
-export type { ColorTokens, ColorMode, JournalSlug } from './colors';
+export type { ColorTokens, ColorMode } from './colors';
 export type { SpacingTokens, SpacingKey, SpacingComponentKey, SpacingLayoutKey } from './spacing';
 export type { FontSizeTokens, FontSizeKey, FontSizeComponentKey, TextStyleKey } from './typography';
 export type { DurationTokens, EasingTokens, KeyframesTokens, TransitionTokens } from './motion';

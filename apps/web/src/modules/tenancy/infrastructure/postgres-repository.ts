@@ -12,6 +12,8 @@ import { AppError } from "@/modules/shared/app-error";
 import * as schema from "@/server/db/schema";
 import type {
   AuditEventInput,
+  JournalAccess,
+  JournalRole,
   JournalSummary,
   OrganizationSummary,
   OrganizationWorkspace,
@@ -236,6 +238,64 @@ export function createPostgresTenancyRepository<
         )
         .orderBy(schema.organizations.name);
     },
+    async getJournalAccess(userId, journalId): Promise<JournalAccess | null> {
+      const [journal] = await database
+        .select({ organizationId: schema.journals.organizationId })
+        .from(schema.journals)
+        .where(eq(schema.journals.id, journalId))
+        .limit(1);
+
+      if (!journal) {
+        return null;
+      }
+
+      const roles = new Set<JournalRole>();
+
+      const adminMemberships = await database
+        .select({ organizationId: schema.organizationMemberships.organizationId })
+        .from(schema.organizationMemberships)
+        .where(
+          and(
+            eq(
+              schema.organizationMemberships.organizationId,
+              journal.organizationId,
+            ),
+            eq(schema.organizationMemberships.userId, userId),
+            eq(schema.organizationMemberships.role, "organization_admin"),
+          ),
+        )
+        .limit(1);
+
+      if (adminMemberships.length > 0) {
+        roles.add("organization_admin");
+      }
+
+      const journalRoles = await database
+        .select({ role: schema.journalMemberships.role })
+        .from(schema.journalMemberships)
+        .where(
+          and(
+            eq(schema.journalMemberships.journalId, journalId),
+            eq(schema.journalMemberships.userId, userId),
+            isNull(schema.journalMemberships.revokedAt),
+          ),
+        );
+
+      for (const membership of journalRoles) {
+        roles.add(membership.role as JournalRole);
+      }
+
+      if (roles.size === 0) {
+        return null;
+      }
+
+      return {
+        organizationId: journal.organizationId,
+        journalId,
+        roles: [...roles],
+      };
+    },
+
     async getOrganizationWorkspace(userId, organizationId) {
       const rows = await database
         .select({

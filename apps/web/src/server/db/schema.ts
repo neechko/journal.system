@@ -163,6 +163,43 @@ export const journals = pgTable(
   ],
 );
 
+/**
+ * Journal-scoped role assignments. Organization admins keep implicit access to
+ * every journal in their organization; this table grants per-journal roles
+ * (editorial, review, production) without widening organization membership.
+ */
+export const journalMemberships = pgTable(
+  "journal_membership",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    journalId: uuid("journal_id")
+      .notNull()
+      .references(() => journals.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    grantedBy: text("granted_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    revokedAt: timestamp("revoked_at", { mode: "date", withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("journal_membership_active_unique")
+      .on(table.journalId, table.userId, table.role)
+      .where(sql`${table.revokedAt} is null`),
+    index("journal_membership_user_idx").on(table.userId),
+    index("journal_membership_journal_idx").on(table.journalId),
+    check(
+      "journal_membership_role_valid",
+      sql`${table.role} in ('editor_in_chief', 'managing_editor', 'editor', 'reviewer', 'production_editor')`,
+    ),
+  ],
+);
+
 export const submissions = pgTable(
   "submission",
   {

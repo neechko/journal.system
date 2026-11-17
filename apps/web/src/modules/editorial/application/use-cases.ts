@@ -1,6 +1,6 @@
 import { AppError } from "@/modules/shared/app-error";
-import type { TenancyRepository } from "@/modules/tenancy/application/ports";
-import { getOrganizationWorkspace } from "@/modules/tenancy/application/use-cases";
+import type { JournalRole, TenancyRepository } from "@/modules/tenancy/application/ports";
+import { getJournalAccess } from "@/modules/tenancy/application/use-cases";
 import type { SubmissionRepository } from "@/modules/submissions/application/ports";
 import type {
   EditorialRepository,
@@ -15,6 +15,7 @@ import type {
   EditorialSubmission,
   EditorialSubmissionDetail,
   ReviewerAssignment,
+  ReviewerManuscriptFile,
   ReviewReport,
   EditorialDecision,
 } from "./ports";
@@ -38,16 +39,27 @@ import {
   type EditorialDecision as DomainEditorialDecision,
 } from "../domain/decision";
 
+const EDITOR_ROLES: JournalRole[] = [
+  "organization_admin",
+  "editor_in_chief",
+  "managing_editor",
+  "editor",
+];
+
 async function assertEditorAccess(
   tenancyRepository: TenancyRepository,
   editorUserId: string,
   journalId: string
 ): Promise<string> {
-  const workspace = await getOrganizationWorkspace(tenancyRepository, editorUserId, journalId);
-  if (!workspace) {
+  const access = await getJournalAccess(
+    tenancyRepository,
+    editorUserId,
+    journalId,
+  );
+  if (!access || !access.roles.some((role) => EDITOR_ROLES.includes(role))) {
     throw new AppError("FORBIDDEN", "Editor access denied for this journal.");
   }
-  return workspace.organization.id;
+  return access.organizationId;
 }
 
 async function assertEditorAccessBySubmission(
@@ -162,7 +174,15 @@ export async function unassignReviewer(
 ): Promise<ReviewerAssignment> {
   const { assignmentId, editorUserId, reason } = input;
 
-  const submission = await repository.getSubmissionDetailForEditor(editorUserId, assignmentId);
+  const reference = await repository.findAssignment(assignmentId);
+  if (!reference) {
+    throw new AppError("NOT_FOUND", "Assignment not found or access denied.");
+  }
+
+  const submission = await repository.getSubmissionDetailForEditor(
+    editorUserId,
+    reference.submissionId,
+  );
   if (!submission) {
     throw new AppError("NOT_FOUND", "Assignment not found or access denied.");
   }
@@ -211,7 +231,15 @@ export async function submitReview(
 ): Promise<ReviewReport> {
   const { assignmentId, reviewerUserId, recommendation, commentsToAuthor, commentsToEditor, scores } = input;
 
-  const detail = await repository.getSubmissionDetailForReviewer(reviewerUserId, assignmentId);
+  const reference = await repository.findAssignment(assignmentId);
+  if (!reference || reference.reviewerUserId !== reviewerUserId) {
+    throw new AppError("NOT_FOUND", "Review assignment not found or access denied.");
+  }
+
+  const detail = await repository.getSubmissionDetailForReviewer(
+    reviewerUserId,
+    reference.submissionId,
+  );
   if (!detail) {
     throw new AppError("NOT_FOUND", "Review assignment not found or access denied.");
   }
@@ -389,13 +417,9 @@ export async function withdrawSubmission(
 ): Promise<EditorialSubmission> {
   const { submissionId, authorUserId, reason } = input;
 
-  const submission = await repository.findSubmissionForEditor(authorUserId, submissionId);
+  const submission = await repository.findSubmissionForAuthor(authorUserId, submissionId);
   if (!submission) {
     throw new AppError("NOT_FOUND", "Submission not found or access denied.");
-  }
-
-  if (submission.createdBy !== authorUserId) {
-    throw new AppError("FORBIDDEN", "Only the author can withdraw the submission.");
   }
 
   if (["accepted", "rejected", "withdrawn"].includes(submission.status)) {
@@ -447,8 +471,13 @@ export async function getSubmissionDetailForEditor(
   editorUserId: string,
   submissionId: string
 ): Promise<EditorialSubmissionDetail | null> {
-  // Note: assertEditorAccess requires journalId - this needs to be resolved from the submission
-  // For now, skip the check here; the repository will enforce tenant isolation
+  const submission = await repository.findSubmissionForEditor(editorUserId, submissionId);
+  if (!submission) {
+    return null;
+  }
+
+  await assertEditorAccess(tenancyRepository, editorUserId, submission.journalId);
+
   return repository.getSubmissionDetailForEditor(editorUserId, submissionId);
 }
 
@@ -458,4 +487,28 @@ export async function getSubmissionDetailForReviewer(
   submissionId: string
 ): Promise<EditorialSubmissionDetail | null> {
   return repository.getSubmissionDetailForReviewer(reviewerUserId, submissionId);
+}
+
+/**
+ * Resolves the private storage object for a manuscript the reviewer is
+ * currently assigned to. Callers stream it; nothing is ever exposed as a
+ * permanent public URL.
+ */
+export async function getManuscriptForReviewer(
+  repository: EditorialRepository,
+  reviewerUserId: string,
+  submissionId: string,
+  manuscriptId: string
+): Promise<ReviewerManuscriptFile> {
+  const manuscript = await repository.getManuscriptForReviewer(
+    reviewerUserId,
+    submissionId,
+    manuscriptId,
+  );
+
+  if (!manuscript) {
+    throw new AppError("NOT_FOUND", "Manuscript not found or access denied.");
+  }
+
+  return manuscript;
 }

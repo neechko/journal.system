@@ -7,6 +7,11 @@ import { AppError } from "@/modules/shared/app-error";
 import { getPublicJournal } from "@/modules/tenancy/application/use-cases";
 import type { PublishedJournal } from "@/modules/tenancy/application/ports";
 import { createPostgresTenancyRepository } from "@/modules/tenancy/infrastructure/postgres-repository";
+import {
+  listPublishedArticles,
+  listPublishedIssues,
+} from "@/modules/publications/application/use-cases";
+import { createPostgresPublicationsRepository } from "@/modules/publications/infrastructure/postgres-repository";
 import { getDatabase } from "@/server/db/client";
 import { PublicSiteFooter } from "@/components/public-site-footer";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -65,10 +70,15 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: {
+        canonical: `/journals/${organizationSlug}/${journalSlug}`,
+      },
       openGraph: {
         type: "website",
         title,
         description,
+        url: `/journals/${organizationSlug}/${journalSlug}`,
+        siteName: journal.title,
       },
     };
   } catch (error) {
@@ -123,6 +133,19 @@ export default async function PublicJournalPage({
     notFound();
   }
 
+  const publicationsRepository = createPostgresPublicationsRepository(getDatabase());
+  const [latestArticles, publishedIssues] = await Promise.all([
+    listPublishedArticles(
+      publicationsRepository,
+      { organizationSlug, journalSlug },
+      10,
+    ),
+    listPublishedIssues(publicationsRepository, {
+      organizationSlug,
+      journalSlug,
+    }),
+  ]);
+
   return (
     <main id="main-content" className="min-h-screen bg-paper text-ink" data-journal={journal.slug}>
       <PublicSiteHeader />
@@ -145,24 +168,19 @@ export default async function PublicJournalPage({
         <span aria-current="page">{journal.title}</span>
       </nav>
 
-      <header className="relative mt-7 overflow-hidden bg-forest text-white">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-32 -top-56 size-[34rem] rounded-full border border-white/10"
-        />
+      <header className="relative mt-7 bg-forest text-white">
         <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
-          <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-lime">
-            <span className="size-1.5 rounded-full bg-coral" />
+          <p className="text-sm font-semibold text-white">
             Public journal profile
           </p>
-          <p className="mt-6 text-sm font-medium text-white/70">
+          <p className="mt-6 text-sm font-medium text-white">
             {journal.organizationName}
           </p>
           <h1 className="mt-3 max-w-4xl font-display text-4xl leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             {journal.title}
           </h1>
           {journal.description ? (
-            <p className="mt-6 max-w-3xl text-base leading-7 text-white/75 sm:text-lg sm:leading-8">
+            <p className="mt-6 max-w-3xl text-base leading-7 text-white sm:text-lg sm:leading-8">
               {journal.description}
             </p>
           ) : null}
@@ -224,6 +242,103 @@ export default async function PublicJournalPage({
               </p>
             )}
           </section>
+
+          <section
+            aria-labelledby="latest-articles-heading"
+            className="border-t border-line pt-10"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-forest">
+              Latest research
+            </p>
+            <h2
+              className="mt-3 font-display text-3xl leading-tight text-ink sm:text-4xl"
+              id="latest-articles-heading"
+            >
+              Recently published articles
+            </h2>
+            {latestArticles.length > 0 ? (
+              <ul className="mt-6 space-y-6" role="list">
+                {latestArticles.map((article) => (
+                  <li key={article.id} className="border-t border-line pt-6 first:border-0 first:pt-0">
+                    <article>
+                      <h3 className="font-display text-xl leading-snug text-ink">
+                        <Link
+                          className="transition-colors hover:text-forest"
+                          href={`/journals/${organizationSlug}/${journalSlug}/articles/${article.id}`}
+                        >
+                          {article.title}
+                        </Link>
+                      </h3>
+                      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                        <span>
+                          {article.authors.map((author) => author.name).join(", ")}
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <time dateTime={article.publishedAt.toISOString()}>
+                          {new Intl.DateTimeFormat("en", {
+                            dateStyle: "medium",
+                            timeZone: "UTC",
+                          }).format(article.publishedAt)}
+                        </time>
+                        {article.doi && (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>doi: {article.doi}</span>
+                          </>
+                        )}
+                      </p>
+                    </article>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-5 rounded-xl border border-dashed border-line bg-white/70 p-5 text-sm leading-6 text-muted">
+                No articles have been published in this journal yet.
+              </p>
+            )}
+          </section>
+
+          <section
+            aria-labelledby="issues-heading"
+            className="border-t border-line pt-10"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-forest">
+              Archive
+            </p>
+            <h2
+              className="mt-3 font-display text-3xl leading-tight text-ink sm:text-4xl"
+              id="issues-heading"
+            >
+              Published issues
+            </h2>
+            {publishedIssues.length > 0 ? (
+              <ul className="mt-6 grid gap-3 sm:grid-cols-2" role="list">
+                {publishedIssues.map((issue) => (
+                  <li key={issue.id}>
+                    <Link
+                      className="block rounded-2xl border border-line bg-white p-5 transition-colors hover:border-forest"
+                      href={`/journals/${organizationSlug}/${journalSlug}/issues/${issue.id}`}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                        {issue.volumeNumber ? `Volume ${issue.volumeNumber} · ` : ""}
+                        {issue.year}
+                      </p>
+                      <p className="mt-2 font-display text-xl text-ink">
+                        {issue.label ?? `Issue ${issue.number}`}
+                      </p>
+                      <p className="mt-1 text-sm text-muted">
+                        {issue.articleCount} {issue.articleCount === 1 ? "article" : "articles"}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-5 rounded-xl border border-dashed border-line bg-white/70 p-5 text-sm leading-6 text-muted">
+                No issues have been published in this journal yet.
+              </p>
+            )}
+          </section>
         </div>
 
         <aside className="space-y-4">
@@ -272,11 +387,11 @@ export default async function PublicJournalPage({
               Author submissions
             </h2>
             <p className="mt-3 text-sm leading-6 text-muted">
-              The development prototype supports drafts, versioned PDF uploads,
-              and submission. Institutional sign-in and development-only
-              private storage must be configured. Do not use real or
-              confidential manuscripts; editorial review, production, and
-              publication are not available yet.
+              Draft a manuscript, upload a versioned PDF, and submit it for
+              editorial screening. Institutional sign-in is required, and
+              private manuscript storage must be configured for the
+              environment. Do not use real or confidential manuscripts on
+              development storage, which is unencrypted and unscanned.
             </p>
             <Link
               className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-forest underline decoration-forest/30 underline-offset-4 hover:decoration-forest"

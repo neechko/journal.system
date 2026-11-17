@@ -121,11 +121,11 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
               <dl className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <dt className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Submitted manuscript version</dt>
-                  <dd className="mt-1 font-semibold text-ink">{detail.submittedManuscriptVersion ?? "—"}</dd>
+                  <dd className="mt-1 font-semibold text-ink">{detail.submittedManuscriptVersion ?? "Not available"}</dd>
                 </div>
                 <div>
                   <dt className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Current manuscript version</dt>
-                  <dd className="mt-1 font-semibold text-ink">{detail.currentManuscriptVersion ?? "—"}</dd>
+                  <dd className="mt-1 font-semibold text-ink">{detail.currentManuscriptVersion ?? "Not available"}</dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Abstract</dt>
@@ -161,7 +161,7 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
                         </p>
                       </div>
                       <a
-                        className="inline-flex min-h-10 items-center rounded-full border border-line px-4 text-sm font-semibold text-forest transition-colors hover:bg-forest/5"
+                        className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-forest transition-colors hover:bg-forest/5"
                         href={`/api/author/submissions/${detail.id}/manuscripts/${manuscript.id}`}
                       >
                         Download
@@ -209,7 +209,7 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
               <div className="flex items-center justify-between">
                 <h2 id="reviewers-heading" className="font-display text-xl text-ink">Reviewers</h2>
                 {detail.status === "under_review" && (
-                  <a className="inline-flex min-h-10 items-center rounded-full bg-forest px-4 text-sm font-semibold text-white transition-colors hover:bg-forest-deep" href="#assign-reviewer">
+                  <a className="inline-flex min-h-11 items-center rounded-lg bg-forest px-4 text-sm font-semibold text-white transition-colors hover:bg-forest-deep" href="#assign-reviewer">
                     Assign reviewer
                   </a>
                 )}

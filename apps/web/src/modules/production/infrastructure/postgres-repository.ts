@@ -15,6 +15,40 @@ import type {
 } from "../application/ports";
 import { buildCrossrefXml, type DoiRegistration } from "../domain/doi";
 
+/** Roles that may work on production (issue/volume/article) for a journal. */
+const PRODUCTION_JOURNAL_ROLES = [
+  "editor_in_chief",
+  "managing_editor",
+  "production_editor",
+] as const;
+
+/**
+ * Tenant scope for production reads: organization admin of the journal's
+ * organization, or an active journal-scoped role with production rights.
+ */
+function productionAccessCondition(userId: string) {
+  return sql`(
+    exists (
+      select 1
+      from ${schema.organizationMemberships}
+      where ${schema.organizationMemberships.organizationId} = ${schema.organizations.id}
+        and ${schema.organizationMemberships.userId} = ${userId}
+        and ${schema.organizationMemberships.role} = 'organization_admin'
+    )
+    or exists (
+      select 1
+      from ${schema.journalMemberships}
+      where ${schema.journalMemberships.journalId} = ${schema.journals.id}
+        and ${schema.journalMemberships.userId} = ${userId}
+        and ${schema.journalMemberships.revokedAt} is null
+        and ${schema.journalMemberships.role} in (${sql.join(
+          PRODUCTION_JOURNAL_ROLES.map((role) => sql`${role}`),
+          sql`, `,
+        )})
+    )
+  )`;
+}
+
 export function createPostgresProductionRepository<
   TQueryResult extends PgQueryResultHKT,
 >(
@@ -54,18 +88,11 @@ export function createPostgresProductionRepository<
                 schema.organizations,
                 eq(schema.organizations.id, schema.journals.organizationId),
               )
-              .innerJoin(
-                schema.organizationMemberships,
-                and(
-                  eq(schema.organizationMemberships.organizationId, schema.organizations.id),
-                  eq(schema.organizationMemberships.userId, productionUserId),
-                  eq(schema.organizationMemberships.role, "organization_admin"),
-                ),
-              )
               .where(
                 and(
                   eq(schema.submissions.id, submissionId),
                   eq(schema.submissions.status, "accepted"),
+                  productionAccessCondition(productionUserId),
                 ),
               )
               .limit(1);
@@ -130,18 +157,11 @@ export function createPostgresProductionRepository<
                 schema.organizations,
                 eq(schema.organizations.id, schema.journals.organizationId),
               )
-              .innerJoin(
-                schema.organizationMemberships,
-                and(
-                  eq(schema.organizationMemberships.organizationId, schema.organizations.id),
-                  eq(schema.organizationMemberships.userId, productionUserId),
-                  eq(schema.organizationMemberships.role, "organization_admin"),
-                ),
-              )
               .where(
                 and(
                   eq(schema.journals.id, journalId),
                   eq(schema.submissions.status, "accepted"),
+                  productionAccessCondition(productionUserId),
                 ),
               )
               .orderBy(desc(schema.submissions.acceptedAt));
@@ -686,18 +706,11 @@ export function createPostgresProductionRepository<
             schema.organizations,
             eq(schema.organizations.id, schema.journals.organizationId),
           )
-          .innerJoin(
-            schema.organizationMemberships,
-            and(
-              eq(schema.organizationMemberships.organizationId, schema.organizations.id),
-              eq(schema.organizationMemberships.userId, productionUserId),
-              eq(schema.organizationMemberships.role, "organization_admin"),
-            ),
-          )
           .where(
             and(
               eq(schema.submissions.id, submissionId),
               eq(schema.submissions.status, "accepted"),
+              productionAccessCondition(productionUserId),
             ),
           )
           .limit(1);
@@ -764,18 +777,11 @@ export function createPostgresProductionRepository<
             schema.organizations,
             eq(schema.organizations.id, schema.journals.organizationId),
           )
-          .innerJoin(
-            schema.organizationMemberships,
-            and(
-              eq(schema.organizationMemberships.organizationId, schema.organizations.id),
-              eq(schema.organizationMemberships.userId, productionUserId),
-              eq(schema.organizationMemberships.role, "organization_admin"),
-            ),
-          )
           .where(
             and(
               eq(schema.journals.id, journalId),
               eq(schema.submissions.status, "accepted"),
+              productionAccessCondition(productionUserId),
             ),
           )
           .orderBy(desc(schema.submissions.acceptedAt));

@@ -1,5 +1,6 @@
 import { AppError } from "@/modules/shared/app-error";
 import type {
+  JournalAccess,
   OrganizationWorkspace,
   PublishedJournalPage,
   PublishedJournal,
@@ -186,6 +187,14 @@ export async function listOrganizations(
   actorUserId: string,
 ) {
   return repository.listOrganizationsForUser(actorUserId);
+}
+
+export async function getJournalAccess(
+  repository: TenancyRepository,
+  actorUserId: string,
+  journalId: string,
+): Promise<JournalAccess | null> {
+  return repository.getJournalAccess(actorUserId, journalId);
 }
 
 export async function getOrganizationWorkspace(

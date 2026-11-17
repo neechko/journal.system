@@ -40,3 +40,7 @@
 - Periksa N+1 queries dan pagination.
 - Gunakan cursor pagination untuk daftar besar bila sesuai.
 - Jangan menggunakan search index sebagai pengganti query transaksional untuk keputusan workflow.
+
+Runtime web menggunakan `DATABASE_URL`. `DIRECT_DATABASE_URL` hanya untuk
+migrasi/tooling agar koneksi serverless tidak diam-diam memakai koneksi langsung
+yang disediakan untuk DDL.

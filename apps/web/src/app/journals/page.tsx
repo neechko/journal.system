@@ -75,7 +75,7 @@ export default async function PublicJournalsPage({
               Public directory
             </p>
             <h1 className="mt-3 font-display text-4xl text-ink sm:text-5xl">
-              Explore journals
+              Journal directory
             </h1>
             <p className="mt-5 max-w-2xl leading-7 text-muted">
               The journal directory is unavailable because application storage
@@ -113,11 +113,8 @@ export default async function PublicJournalsPage({
 
         <header className="mt-8 grid gap-6 border-b border-line pb-9 md:grid-cols-[1fr_auto] md:items-end">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
-              Discovery
-            </p>
             <h1 className="mt-3 font-display text-4xl leading-tight tracking-tight text-ink sm:text-5xl">
-              Explore journals
+              Journal directory
             </h1>
             <p className="mt-4 max-w-2xl leading-7 text-muted">
               Find journals by title, publishing organization, or description.
@@ -125,10 +122,6 @@ export default async function PublicJournalsPage({
               published.
             </p>
           </div>
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-white px-3 py-2 text-xs font-semibold text-forest">
-            <span className="size-1.5 rounded-full bg-coral" />
-            Public directory
-          </span>
         </header>
 
         <form
@@ -137,7 +130,7 @@ export default async function PublicJournalsPage({
           method="get"
         >
           <label
-            className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted"
+            className="mb-2 block text-sm font-semibold text-ink"
             htmlFor="journal-search"
           >
             Search journals
@@ -294,7 +287,7 @@ export default async function PublicJournalsPage({
           >
             {catalog.page > 1 ? (
               <Link
-                className="inline-flex min-h-10 items-center rounded-full border border-line bg-white px-4 text-sm font-semibold text-forest hover:border-forest"
+                className="inline-flex min-h-11 items-center rounded-lg border border-line bg-paper px-4 text-sm font-semibold text-forest hover:border-forest"
                 href={pageHref(catalog.page - 1)}
               >
                 ← Previous
@@ -307,7 +300,7 @@ export default async function PublicJournalsPage({
             </span>
             {catalog.hasNextPage ? (
               <Link
-                className="inline-flex min-h-10 items-center rounded-full border border-line bg-white px-4 text-sm font-semibold text-forest hover:border-forest"
+                className="inline-flex min-h-11 items-center rounded-lg border border-line bg-paper px-4 text-sm font-semibold text-forest hover:border-forest"
                 href={pageHref(catalog.page + 1)}
               >
                 Next →
