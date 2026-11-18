@@ -104,4 +104,17 @@ queue omits author drafts even when an editor knows the submission ID; the
 production queue includes accepted submissions only. Browser-supplied role,
 organization ID, and tenant ID are never used for authorization.
 
+## 9. Journal role administration
+
+The organization admin workspace exposes journal role grant and revoke actions
+for accounts that already exist after sign-in. Grant input is an account email,
+one of the five journal roles, and an audit reason. Revoke input identifies an
+active membership and requires an audit reason plus explicit confirmation. Both actions validate UUIDs and
+role values at the Server Action boundary, re-check organization admin status
+and journal ownership inside the transaction, and write an audit event with the
+membership ID. Duplicate grants and stale revocations return stable application
+errors. The member list is joined to the actor's organization membership in the
+database, so an inaccessible journal returns no staff data. The organization
+admin role is not grantable as a journal role.
+
 **Last reviewed:** 2026-11-18

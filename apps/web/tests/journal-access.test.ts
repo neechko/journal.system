@@ -13,8 +13,12 @@ import { getPublishedArticle, listPublishedArticles } from "../src/modules/publi
 import {
   getJournalAccess,
   getPublicJournal,
+  grantJournalRole,
+  listJournalStaff,
   publishJournal,
+  revokeJournalRole,
 } from "../src/modules/tenancy/application/use-cases";
+import { grantJournalRoleInputSchema } from "../src/modules/tenancy/application/validation";
 import {
   getSubmissionDetailForEditor,
   listEditorialJournalsForUser,
@@ -169,6 +173,93 @@ beforeEach(async () => {
 });
 
 describe("journal-scoped access", () => {
+  it("grants and revokes a role with tenant scope and audit events", async () => {
+    const tenancy = createPostgresTenancyRepository(database());
+    const input = {
+      organizationId: fixtures.organizationAId,
+      journalId: fixtures.journalBId,
+      email: "outsider@example.invalid",
+      role: "editor" as const,
+      reason: "Assign editor to this journal for test coverage",
+    };
+    const membershipId = await grantJournalRole(tenancy, "org-admin", input);
+
+    expect(await listJournalStaff(tenancy, "org-admin", fixtures.organizationAId, fixtures.journalBId))
+      .toMatchObject([{ id: membershipId, userId: "outsider", role: "editor" }]);
+    expect(await listEditorialJournalsForUser(tenancy, "outsider"))
+      .toMatchObject([{ journalId: fixtures.journalBId }]);
+    expect(await listJournalStaff(tenancy, "outsider", fixtures.organizationAId, fixtures.journalBId))
+      .toEqual([]);
+
+    await revokeJournalRole(tenancy, "org-admin", {
+      organizationId: fixtures.organizationAId,
+      journalId: fixtures.journalBId,
+      membershipId,
+      reason: "Remove the temporary editor role after test coverage",
+      confirm: "confirm",
+    });
+    expect(await listEditorialJournalsForUser(tenancy, "outsider")).toEqual([]);
+    const audit = await database().select().from(schema.auditEvents);
+    expect(audit.map((event) => event.action)).toEqual([
+      "journal.role_granted",
+      "journal.role_revoked",
+    ]);
+    expect(audit.every((event) => event.actorUserId === "org-admin" &&
+      event.entityId === membershipId && event.organizationId === fixtures.organizationAId))
+      .toBe(true);
+  });
+
+  it("denies cross-tenant and unauthorized role changes", async () => {
+    const tenancy = createPostgresTenancyRepository(database());
+    const input = {
+      organizationId: fixtures.organizationAId,
+      journalId: fixtures.journalBId,
+      email: "outsider@example.invalid",
+      role: "editor" as const,
+      reason: "Assign editor after authorization review",
+    };
+    await expect(grantJournalRole(tenancy, "outsider", input))
+      .rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(grantJournalRole(tenancy, "org-admin", {
+      ...input,
+      journalId: fixtures.journalOtherTenantId,
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(grantJournalRole(tenancy, "org-admin", {
+      ...input,
+      email: "unknown@example.invalid",
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    const membershipId = await grantJournalRole(tenancy, "org-admin", input);
+    await expect(grantJournalRole(tenancy, "org-admin", input))
+      .rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(revokeJournalRole(tenancy, "outsider", {
+      organizationId: fixtures.organizationAId,
+      journalId: fixtures.journalBId,
+      membershipId,
+      reason: "Attempt to remove another journal role",
+      confirm: "confirm",
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(revokeJournalRole(tenancy, "org-admin", {
+      organizationId: fixtures.organizationAId,
+      journalId: fixtures.journalAId,
+      membershipId,
+      reason: "Attempt to remove role from wrong journal",
+      confirm: "confirm",
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await listJournalStaff(tenancy, "org-admin", fixtures.organizationAId, fixtures.journalBId))
+      .toHaveLength(1);
+  });
+
+  it("rejects organization admin as a journal role at the boundary", () => {
+    expect(grantJournalRoleInputSchema.safeParse({
+      organizationId: fixtures.organizationAId,
+      journalId: fixtures.journalAId,
+      email: "outsider@example.invalid",
+      role: "organization_admin",
+      reason: "Try to assign an out-of-scope role",
+    }).success).toBe(false);
+  });
+
   it("lists only role-eligible journal workspaces", async () => {
     const tenancy = createPostgresTenancyRepository(database());
 

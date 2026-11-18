@@ -48,8 +48,9 @@ export default async function OrganizationWorkspacePage({
   const draftJournalCount = workspace.journals.length - publishedJournalCount;
 
   return (
-    <main id="main-content" className="min-h-screen bg-paper text-ink">
+    <>
       <WorkspaceHeader />
+      <main id="main-content" className="min-h-screen bg-paper text-ink">
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
           <Link className="hover:text-forest" href="/admin/organizations">
@@ -190,6 +191,12 @@ export default async function OrganizationWorkspacePage({
                             organizationId={workspace.organization.id}
                           />
                         </details>
+                        <Link
+                          className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-forest underline underline-offset-4"
+                          href={`/admin/organizations/${workspace.organization.id}/journals/${journal.id}/access`}
+                        >
+                          Manage journal access
+                        </Link>
                       </article>
                     </li>
                   );
@@ -217,6 +224,7 @@ export default async function OrganizationWorkspacePage({
               </h2>
               <p className="mt-3 text-sm leading-6 text-muted">
                 This workspace manages organization and journal profiles.
+                Journal roles can be assigned to accounts that have signed in.
                 Member invitations, editorial boards, submissions, reviews,
                 and article archives are not available yet.
               </p>
@@ -224,6 +232,7 @@ export default async function OrganizationWorkspacePage({
           </aside>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

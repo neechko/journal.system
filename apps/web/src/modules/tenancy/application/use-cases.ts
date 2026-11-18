@@ -1,6 +1,7 @@
 import { AppError } from "@/modules/shared/app-error";
 import type {
   JournalAccess,
+  JournalStaffMember,
   OrganizationWorkspace,
   PublishedJournalPage,
   PublishedJournal,
@@ -11,6 +12,8 @@ import type {
   OrganizationInput,
   PublishJournalInput,
   UpdateJournalProfileInput,
+  GrantJournalRoleInput,
+  RevokeJournalRoleInput,
 } from "./validation";
 
 export async function provisionOrganization(
@@ -195,6 +198,66 @@ export async function getJournalAccess(
   journalId: string,
 ): Promise<JournalAccess | null> {
   return repository.getJournalAccess(actorUserId, journalId);
+}
+
+export async function grantJournalRole(
+  repository: TenancyRepository,
+  actorUserId: string,
+  input: GrantJournalRoleInput,
+): Promise<string> {
+  return repository.transaction(async (transaction) => {
+    if (!(await transaction.isOrganizationAdmin(actorUserId, input.organizationId)) ||
+      !(await transaction.findJournal(input.organizationId, input.journalId))) {
+      throw new AppError("NOT_FOUND", "Journal not found or access denied.");
+    }
+    const target = await transaction.findUserByEmail(input.email);
+    if (!target) {
+      throw new AppError("NOT_FOUND", "This account has not signed in yet.");
+    }
+    const membershipId = await transaction.insertJournalRole(actorUserId, target.id, input);
+    await transaction.insertAuditEvent({
+      organizationId: input.organizationId,
+      actorUserId,
+      action: "journal.role_granted",
+      entityType: "journal_membership",
+      entityId: membershipId,
+      reason: input.reason,
+    });
+    return membershipId;
+  });
+}
+
+export async function revokeJournalRole(
+  repository: TenancyRepository,
+  actorUserId: string,
+  input: RevokeJournalRoleInput,
+): Promise<void> {
+  await repository.transaction(async (transaction) => {
+    if (!(await transaction.isOrganizationAdmin(actorUserId, input.organizationId)) ||
+      !(await transaction.findJournal(input.organizationId, input.journalId))) {
+      throw new AppError("NOT_FOUND", "Journal not found or access denied.");
+    }
+    if (!(await transaction.revokeJournalRole(input.journalId, input.membershipId))) {
+      throw new AppError("NOT_FOUND", "Active role not found.");
+    }
+    await transaction.insertAuditEvent({
+      organizationId: input.organizationId,
+      actorUserId,
+      action: "journal.role_revoked",
+      entityType: "journal_membership",
+      entityId: input.membershipId,
+      reason: input.reason,
+    });
+  });
+}
+
+export async function listJournalStaff(
+  repository: TenancyRepository,
+  actorUserId: string,
+  organizationId: string,
+  journalId: string,
+): Promise<JournalStaffMember[]> {
+  return repository.listJournalStaff(actorUserId, organizationId, journalId);
 }
 
 export async function getOrganizationWorkspace(

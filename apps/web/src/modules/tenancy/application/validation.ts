@@ -58,9 +58,35 @@ export const publicJournalPageSchema = z
 
 export const publicJournalSearchSchema = z.string().trim().max(100);
 
+export const journalStaffRoleSchema = z.enum([
+  "editor_in_chief",
+  "managing_editor",
+  "editor",
+  "reviewer",
+  "production_editor",
+]);
+
+export const grantJournalRoleInputSchema = z.object({
+  organizationId: z.uuid(),
+  journalId: z.uuid(),
+  email: z.email().trim().toLowerCase().max(254),
+  role: journalStaffRoleSchema,
+  reason: z.string().trim().min(10).max(500),
+});
+
+export const revokeJournalRoleInputSchema = z.object({
+  organizationId: z.uuid(),
+  journalId: z.uuid(),
+  membershipId: z.uuid(),
+  reason: z.string().trim().min(10).max(500),
+  confirm: z.literal("confirm"),
+});
+
 export type OrganizationInput = z.infer<typeof organizationInputSchema>;
 export type JournalInput = z.infer<typeof journalInputSchema>;
 export type PublishJournalInput = z.infer<typeof publishJournalInputSchema>;
 export type UpdateJournalProfileInput = z.infer<
   typeof updateJournalProfileInputSchema
 >;
+export type GrantJournalRoleInput = z.infer<typeof grantJournalRoleInputSchema>;
+export type RevokeJournalRoleInput = z.infer<typeof revokeJournalRoleInputSchema>;

@@ -89,6 +89,10 @@ PostgreSQL adapter.
 - Organization admins can maintain plain-text journal aims/scope and author
   guidelines. Updates are tenant-scoped, audited, and explicitly confirmed;
   published changes are visible immediately.
+- Organization admins can grant and revoke journal-scoped editorial, reviewer,
+  and production roles for accounts that have signed in. Each change checks
+  the organization and journal in a transaction and records an audit reason.
+  Account invitations and OIDC provider setup are still outstanding.
 - The `/journals` directory and public journal lookup return only records with
   `published_at` set. The directory searches journal title, organization name,
   and description, and shows 12 journals per page. Published issue and article
@@ -111,7 +115,7 @@ PostgreSQL adapter.
   do not upload real or confidential manuscripts. No production object-storage
   adapter or retention policy is configured. The signed-in account is the only
   author identity currently recorded; co-author and affiliation metadata,
-  editorial screening, review, article publication, membership management, and
+  editorial screening, review, article publication, member invitations, and
   production bootstrap are not complete end-to-end user flows. Some domain
   use cases and read-only publication routes exist. Editor and production
   queues list role-scoped journal data, while production actions remain

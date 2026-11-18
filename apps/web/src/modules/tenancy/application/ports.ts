@@ -2,6 +2,7 @@ import type {
   JournalInput,
   OrganizationInput,
   UpdateJournalProfileInput,
+  GrantJournalRoleInput,
 } from "./validation";
 
 export interface OrganizationSummary {
@@ -81,6 +82,15 @@ export interface JournalWorkspaceAccess extends JournalAccess {
   journalSlug: string;
 }
 
+export interface JournalStaffMember {
+  id: string;
+  userId: string;
+  name: string | null;
+  email: string | null;
+  role: Exclude<JournalRole, "organization_admin">;
+  createdAt: Date;
+}
+
 export interface TenancyTransaction {
   isPlatformOperator(userId: string): Promise<boolean>;
   isOrganizationAdmin(userId: string, organizationId: string): Promise<boolean>;
@@ -110,6 +120,13 @@ export interface TenancyTransaction {
       "description" | "aimsScope" | "authorGuidelines"
     >,
   ): Promise<JournalSummary | null>;
+  findUserByEmail(email: string): Promise<{ id: string } | null>;
+  insertJournalRole(
+    actorUserId: string,
+    targetUserId: string,
+    input: GrantJournalRoleInput,
+  ): Promise<string>;
+  revokeJournalRole(journalId: string, membershipId: string): Promise<boolean>;
   insertAuditEvent(event: AuditEventInput): Promise<void>;
 }
 
@@ -124,6 +141,11 @@ export interface TenancyRepository {
     journalId: string,
   ): Promise<JournalAccess | null>;
   listJournalWorkspacesForUser(userId: string): Promise<JournalWorkspaceAccess[]>;
+  listJournalStaff(
+    actorUserId: string,
+    organizationId: string,
+    journalId: string,
+  ): Promise<JournalStaffMember[]>;
   getOrganizationWorkspace(
     userId: string,
     organizationId: string,

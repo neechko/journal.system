@@ -14,6 +14,7 @@ import type {
   AuditEventInput,
   JournalAccess,
   JournalWorkspaceAccess,
+  JournalStaffMember,
   JournalRole,
   JournalSummary,
   OrganizationSummary,
@@ -26,17 +27,19 @@ import type {
 } from "../application/ports";
 import type {
   JournalInput,
+  GrantJournalRoleInput,
   OrganizationInput,
   UpdateJournalProfileInput,
 } from "../application/validation";
 
 function isUniqueConstraintViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
+  let current = error;
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (typeof current !== "object" || current === null) return false;
+    if ("code" in current && current.code === "23505") return true;
+    current = "cause" in current ? current.cause : null;
+  }
+  return false;
 }
 
 export function createPostgresTenancyRepository<
@@ -192,6 +195,48 @@ export function createPostgresTenancyRepository<
                   publishedAt: schema.journals.publishedAt,
                 });
               return journal ?? null;
+            },
+            async findUserByEmail(email) {
+              const users = await tx
+                .select({ id: schema.users.id })
+                .from(schema.users)
+                .where(sql`lower(${schema.users.email}) = ${email.toLowerCase()}`)
+                .limit(2);
+              if (users.length > 1) {
+                throw new AppError("CONFLICT", "More than one account matches this email.");
+              }
+              return users[0] ?? null;
+            },
+            async insertJournalRole(actorUserId, targetUserId, input: GrantJournalRoleInput) {
+              try {
+                const [membership] = await tx
+                  .insert(schema.journalMemberships)
+                  .values({
+                    journalId: input.journalId,
+                    userId: targetUserId,
+                    role: input.role,
+                    grantedBy: actorUserId,
+                  })
+                  .returning({ id: schema.journalMemberships.id });
+                return membership.id;
+              } catch (error) {
+                if (isUniqueConstraintViolation(error)) {
+                  throw new AppError("CONFLICT", "This account already has that role.");
+                }
+                throw error;
+              }
+            },
+            async revokeJournalRole(journalId, membershipId) {
+              const [membership] = await tx
+                .update(schema.journalMemberships)
+                .set({ revokedAt: new Date() })
+                .where(and(
+                  eq(schema.journalMemberships.id, membershipId),
+                  eq(schema.journalMemberships.journalId, journalId),
+                  isNull(schema.journalMemberships.revokedAt),
+                ))
+                .returning({ id: schema.journalMemberships.id });
+              return Boolean(membership);
             },
             async insertAuditEvent(event: AuditEventInput) {
               await tx.insert(schema.auditEvents).values(event);
@@ -349,6 +394,38 @@ export function createPostgresTenancyRepository<
       return [...workspaces.values()].sort((a, b) =>
         a.organizationName.localeCompare(b.organizationName) || a.journalTitle.localeCompare(b.journalTitle),
       );
+    },
+
+    async listJournalStaff(actorUserId, organizationId, journalId): Promise<JournalStaffMember[]> {
+      const rows = await database
+        .select({
+          id: schema.journalMemberships.id,
+          userId: schema.users.id,
+          name: schema.users.name,
+          email: schema.users.email,
+          role: schema.journalMemberships.role,
+          createdAt: schema.journalMemberships.createdAt,
+        })
+        .from(schema.journalMemberships)
+        .innerJoin(schema.journals, and(
+          eq(schema.journals.id, schema.journalMemberships.journalId),
+          eq(schema.journals.organizationId, organizationId),
+        ))
+        .innerJoin(schema.organizationMemberships, and(
+          eq(schema.organizationMemberships.organizationId, schema.journals.organizationId),
+          eq(schema.organizationMemberships.userId, actorUserId),
+          eq(schema.organizationMemberships.role, "organization_admin"),
+        ))
+        .innerJoin(schema.users, eq(schema.users.id, schema.journalMemberships.userId))
+        .where(and(
+          eq(schema.journalMemberships.journalId, journalId),
+          isNull(schema.journalMemberships.revokedAt),
+        ))
+        .orderBy(schema.users.email, schema.journalMemberships.role);
+      return rows.map((row) => ({
+        ...row,
+        role: row.role as JournalStaffMember["role"],
+      }));
     },
 
     async getOrganizationWorkspace(userId, organizationId) {
