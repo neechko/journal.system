@@ -15,8 +15,15 @@ import {
   getPublicJournal,
   publishJournal,
 } from "../src/modules/tenancy/application/use-cases";
-import { listSubmissionsForEditor } from "../src/modules/editorial/application/use-cases";
-import { listAcceptedSubmissionsUseCase } from "../src/modules/production/application/use-cases";
+import {
+  getSubmissionDetailForEditor,
+  listEditorialJournalsForUser,
+  listSubmissionsForEditor,
+} from "../src/modules/editorial/application/use-cases";
+import {
+  listAcceptedSubmissionsUseCase,
+  listProductionJournalsForUser,
+} from "../src/modules/production/application/use-cases";
 
 const migrationsFolder = fileURLToPath(new URL("../drizzle/", import.meta.url));
 let client: PGlite | null = null;
@@ -162,6 +169,66 @@ beforeEach(async () => {
 });
 
 describe("journal-scoped access", () => {
+  it("lists only role-eligible journal workspaces", async () => {
+    const tenancy = createPostgresTenancyRepository(database());
+
+    const adminJournals = await listEditorialJournalsForUser(tenancy, "org-admin");
+    expect(adminJournals.map((journal) => journal.journalId)).toEqual([
+      fixtures.journalAId,
+      fixtures.journalBId,
+    ]);
+
+    const editorJournals = await listEditorialJournalsForUser(tenancy, "journal-editor");
+    expect(editorJournals.map((journal) => journal.journalId)).toEqual([fixtures.journalAId]);
+    expect(await listEditorialJournalsForUser(tenancy, "reviewer")).toEqual([]);
+    expect(await listEditorialJournalsForUser(tenancy, "outsider")).toEqual([]);
+
+    const productionJournals = await listProductionJournalsForUser(tenancy, "production-editor");
+    expect(productionJournals.map((journal) => journal.journalId)).toEqual([fixtures.journalAId]);
+    expect(await listProductionJournalsForUser(tenancy, "journal-editor")).toEqual([]);
+
+    await database()
+      .update(schema.journalMemberships)
+      .set({ revokedAt: new Date() })
+      .where(sql`${schema.journalMemberships.userId} = 'journal-editor'`);
+    expect(await listEditorialJournalsForUser(tenancy, "journal-editor")).toEqual([]);
+  });
+
+  it("keeps author drafts out of editorial lists and details", async () => {
+    const [draft] = await database()
+      .insert(schema.submissions)
+      .values({
+        journalId: fixtures.journalAId,
+        createdBy: "outsider",
+        title: "Private author draft",
+        status: "draft",
+      })
+      .returning();
+    const tenancy = createPostgresTenancyRepository(database());
+    const editorial = createPostgresEditorialRepository(database());
+
+    const queue = await listSubmissionsForEditor(
+      editorial,
+      tenancy,
+      "journal-editor",
+      fixtures.journalAId,
+    );
+    expect(queue.map((submission) => submission.id)).toEqual([fixtures.submissionAId]);
+    expect(await listSubmissionsForEditor(
+      editorial,
+      tenancy,
+      "journal-editor",
+      fixtures.journalAId,
+      ["draft"],
+    )).toEqual([]);
+    expect(await getSubmissionDetailForEditor(
+      editorial,
+      tenancy,
+      "journal-editor",
+      draft.id,
+    )).toBeNull();
+  });
+
   it("resolves organization admins and journal roles to explicit scopes", async () => {
     const tenancy = createPostgresTenancyRepository(database());
 

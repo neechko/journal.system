@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { AppError } from "@/modules/shared/app-error";
-import type { JournalRole, TenancyRepository } from "@/modules/tenancy/application/ports";
+import type { JournalRole, JournalWorkspaceAccess, TenancyRepository } from "@/modules/tenancy/application/ports";
 import { getJournalAccess } from "@/modules/tenancy/application/use-cases";
 import type {
   ProductionRepository,
@@ -44,6 +44,16 @@ const PRODUCTION_ROLES: JournalRole[] = [
   "managing_editor",
   "production_editor",
 ];
+
+export async function listProductionJournalsForUser(
+  tenancyRepository: TenancyRepository,
+  userId: string,
+): Promise<JournalWorkspaceAccess[]> {
+  const workspaces = await tenancyRepository.listJournalWorkspacesForUser(userId);
+  return workspaces.filter((workspace) =>
+    workspace.roles.some((role) => PRODUCTION_ROLES.includes(role)),
+  );
+}
 
 async function assertProductionAccess(
   tenancyRepository: TenancyRepository,

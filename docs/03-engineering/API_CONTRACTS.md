@@ -73,8 +73,8 @@ and resulting states, human actor, source, reason, tenant, timestamp, and a
 server-generated correlation ID. Repeated or stale transitions do not create
 another transition event. The exact submitted manuscript version is stored
 with the submission for provenance. Submitted metadata and manuscript versions
-are read-only to the author; intake screening, editorial assignment, reviewer
-access, and editorial decisions remain unimplemented.
+are read-only to the author. Editorial and reviewer use cases exist, but the
+full intake-to-decision user flow is not yet verified end to end.
 
 The current author draft prototype includes an optional structured keyword list
 entered one per line. The application trims entries and ignores blank lines; it
@@ -92,5 +92,16 @@ explicit confirmation and audit reason. Blank fields are stored as `null`;
 description is limited to 2,000 characters. Updates to a published journal
 appear on its public profile and directory after revalidation. This action does
 not change the journal title, slug, or publication state.
+
+## 8. Scoped workspace lists
+
+`/editor/submissions` and `/production/submissions` accept an optional
+`journalId` UUID query parameter. The server resolves active journal and
+organization memberships for the signed-in user, filters roles for each
+workspace, then checks access again in the submission use case and repository.
+An invalid or inaccessible `journalId` returns no submission data. The editor
+queue omits author drafts even when an editor knows the submission ID; the
+production queue includes accepted submissions only. Browser-supplied role,
+organization ID, and tenant ID are never used for authorization.
 
 **Last reviewed:** 2026-11-18

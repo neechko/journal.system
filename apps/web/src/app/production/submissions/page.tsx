@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { z } from "zod";
 import { PublicSiteFooter } from "@/components/public-site-footer";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { listAcceptedSubmissionsUseCase } from "@/modules/production/application/use-cases";
+import {
+  listAcceptedSubmissionsUseCase,
+  listProductionJournalsForUser,
+} from "@/modules/production/application/use-cases";
 import { createPostgresProductionRepository } from "@/modules/production/infrastructure/postgres-repository";
 import { createPostgresTenancyRepository } from "@/modules/tenancy/infrastructure/postgres-repository";
 import { auth, isOidcConfigured } from "@/server/auth";
@@ -15,80 +19,132 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function ProductionSubmissionsPage() {
-  if (!isOidcConfigured) {
-    return (
-      <main id="main-content" className="min-h-screen bg-paper text-ink">
-        <PublicSiteHeader />
-        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
-          <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
-            <Link className="hover:text-forest" href="/">
-              Home
-            </Link>
+const journalIdSchema = z.uuid();
+
+export default async function ProductionSubmissionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ journalId?: string | string[] }>;
+}) {
+  const session = isOidcConfigured ? await auth() : null;
+  const userId = session?.user?.id;
+  const database = userId ? getDatabase() : null;
+  const tenancy = database ? createPostgresTenancyRepository(database) : null;
+  const journals = tenancy && userId
+    ? await listProductionJournalsForUser(tenancy, userId)
+    : [];
+  const requestedJournalId = (await searchParams).journalId;
+  const parsedJournalId = requestedJournalId === undefined
+    ? null
+    : journalIdSchema.safeParse(requestedJournalId);
+  const selectedJournal = requestedJournalId === undefined
+    ? journals[0]
+    : parsedJournalId?.success
+      ? journals.find((journal) => journal.journalId === parsedJournalId.data)
+      : undefined;
+  const submissions = selectedJournal && tenancy && database && userId
+    ? await listAcceptedSubmissionsUseCase(
+        createPostgresProductionRepository(database),
+        tenancy,
+        userId,
+        selectedJournal.journalId,
+      )
+    : [];
+
+  return (
+    <>
+      <PublicSiteHeader />
+      <main id="main-content" className="min-h-[60vh] bg-paper text-ink">
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+          <nav aria-label="Breadcrumb" className="text-sm text-muted">
+            <Link className="inline-flex min-h-11 items-center hover:text-forest" href="/">Home</Link>
             <span aria-hidden="true" className="mx-2 text-line">/</span>
             <span aria-current="page">Production workspace</span>
           </nav>
-          <div className="mt-10 rounded-2xl border border-line bg-white p-6 shadow-sm sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">Production workspace</p>
+          <header className="mt-7 max-w-3xl border-b border-line pb-7">
+            <p className="text-sm font-semibold text-forest">Production workspace</p>
             <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">
-              The production workspace is not enabled yet.
+              Accepted submissions
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-muted">
-              This area requires an institutional OIDC identity provider and database
-              configuration. The platform does not provide demo accounts or authentication
-              shortcuts.
+            <p className="mt-4 leading-7 text-muted">
+              View accepted manuscripts by journal before preparing article versions.
             </p>
-          </div>
+          </header>
+
+          {!isOidcConfigured ? (
+            <p className="mt-8 max-w-2xl rounded-xl border border-line bg-white p-6 leading-7">
+              This workspace requires an institutional sign-in provider. It is not enabled in this environment.
+            </p>
+          ) : !userId ? (
+            <div className="mt-8 rounded-xl border border-line bg-white p-6">
+              <p className="leading-7">Sign in to view your production journals.</p>
+              <Link className="mt-4 inline-flex min-h-11 items-center font-semibold text-forest underline underline-offset-4" href="/api/auth/signin">
+                Sign in
+              </Link>
+            </div>
+          ) : journals.length === 0 ? (
+            <p className="mt-8 rounded-xl border border-line bg-white p-6 leading-7">
+              No production journals are assigned to your account.
+            </p>
+          ) : (
+            <div className="mt-8 grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+              <nav aria-label="Production journals" className="min-w-0">
+                <h2 className="text-sm font-semibold text-ink">Your journals</h2>
+                <ul className="mt-3 space-y-2">
+                  {journals.map((journal) => (
+                    <li key={journal.journalId}>
+                      <Link
+                        href={`/production/submissions?journalId=${journal.journalId}`}
+                        aria-current={selectedJournal?.journalId === journal.journalId ? "page" : undefined}
+                        className={`flex min-h-11 min-w-0 items-center rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest ${selectedJournal?.journalId === journal.journalId ? "border-forest bg-white text-forest" : "border-line bg-white text-ink hover:border-forest"}`}
+                      >
+                        <span className="min-w-0 break-words">{journal.journalTitle}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+              <section aria-label="Accepted journal submissions" className="min-w-0">
+                {!selectedJournal ? (
+                  <p className="rounded-xl border border-line bg-white p-6 leading-7">
+                    This journal is not available to your account. Select one of your assigned journals.
+                  </p>
+                ) : (
+                  <>
+                    <div className="border-b border-line pb-4">
+                      <p className="text-sm text-muted">{selectedJournal.organizationName}</p>
+                      <h2 className="mt-1 font-display text-2xl text-ink">{selectedJournal.journalTitle}</h2>
+                    </div>
+                    {submissions.length === 0 ? (
+                      <p className="mt-5 rounded-xl border border-line bg-white p-6 leading-7">
+                        No accepted manuscripts are waiting in this journal.
+                      </p>
+                    ) : (
+                      <ul className="mt-5 space-y-3">
+                        {submissions.map((submission) => (
+                          <li key={submission.id} className="min-w-0 rounded-xl border border-line bg-white p-5">
+                            <h3 className="break-words font-semibold text-ink">{submission.title}</h3>
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+                              <span>Accepted manuscript</span>
+                              {submission.submittedAt && <time dateTime={submission.submittedAt.toISOString()}>
+                                Submitted {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(submission.submittedAt)}
+                              </time>}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="mt-6 text-sm leading-6 text-muted">
+                      Article preparation actions are still being developed. This queue is read-only.
+                    </p>
+                  </>
+                )}
+              </section>
+            </div>
+          )}
         </div>
-        <PublicSiteFooter />
       </main>
-    );
-  }
-
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) {
-    return (
-      <main id="main-content" className="min-h-screen bg-paper text-ink">
-        <PublicSiteHeader />
-        <section className="mx-auto min-h-[60vh] max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
-            Production workspace
-          </p>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-            Sign in to manage production.
-          </h1>
-        </section>
-        <PublicSiteFooter />
-      </main>
-    );
-  }
-
-  // TODO: Implement proper production access check
-  return (
-    <main id="main-content" className="min-h-screen bg-paper text-ink">
-      <PublicSiteHeader />
-      <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
-        <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
-          <Link className="hover:text-forest" href="/">
-            Home
-          </Link>
-          <span aria-hidden="true" className="mx-2 text-line">/</span>
-          <span aria-current="page">Production workspace</span>
-        </nav>
-        <header className="mt-8 max-w-3xl border-b border-line pb-7">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
-            Production workspace
-          </p>
-          <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">
-            Accepted submissions ready for production
-          </h1>
-          <p className="mt-4 leading-7 text-muted">
-            Your production dashboard will appear here once production roles are implemented.
-          </p>
-        </header>
-      </div>
       <PublicSiteFooter />
-    </main>
+    </>
   );
 }

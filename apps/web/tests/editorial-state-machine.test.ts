@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { AppError } from "../src/modules/shared/app-error";
 import {
   applyTransition,
   canTransition,
@@ -7,29 +8,32 @@ import {
   canAuthorAct,
   canEditorAct,
   canReviewerAct,
-  type SubmissionStatus,
-  type EditorialAction,
-} from "./state-machine";
+} from "../src/modules/editorial/domain/state-machine";
+
+function expectInvalidTransition(transition: () => unknown): void {
+  try {
+    transition();
+    throw new Error("Expected transition to be rejected");
+  } catch (error) {
+    expect(error).toBeInstanceOf(AppError);
+    expect(error).toMatchObject({ code: "INVALID_STATE_TRANSITION" });
+  }
+}
 
 describe("Editorial State Machine", () => {
   describe("Valid transitions from draft", () => {
-    it("allows editor to pass screening", () => {
-      const result = applyTransition("draft", "screening_passed", "editor", "human");
-      expect(result).toBe("under_review");
-    });
-
-    it("allows editor to fail screening", () => {
-      const result = applyTransition("draft", "screening_failed", "editor", "human");
-      expect(result).toBe("rejected");
-    });
-
     it("allows author to withdraw", () => {
       const result = applyTransition("draft", "withdraw", "author", "human");
       expect(result).toBe("withdrawn");
     });
 
     it("rejects reviewer acting on draft", () => {
-      expect(() => applyTransition("draft", "screening_passed", "reviewer", "human")).toThrow("Invalid state transition");
+      expectInvalidTransition(() => applyTransition("draft", "screening_passed", "reviewer", "human"));
+    });
+
+    it("rejects editor screening before the author submits", () => {
+      expectInvalidTransition(() => applyTransition("draft", "screening_passed", "editor", "human"));
+      expectInvalidTransition(() => applyTransition("draft", "screening_failed", "editor", "human"));
     });
   });
 
@@ -122,15 +126,15 @@ describe("Editorial State Machine", () => {
     });
 
     it("no transitions from terminal states", () => {
-      expect(() => applyTransition("accepted", "accept", "editor", "human")).toThrow("Invalid state transition");
-      expect(() => applyTransition("rejected", "reject", "editor", "human")).toThrow("Invalid state transition");
-      expect(() => applyTransition("withdrawn", "withdraw", "author", "human")).toThrow("Invalid state transition");
+      expectInvalidTransition(() => applyTransition("accepted", "accept", "editor", "human"));
+      expectInvalidTransition(() => applyTransition("rejected", "reject", "editor", "human"));
+      expectInvalidTransition(() => applyTransition("withdrawn", "withdraw", "author", "human"));
     });
   });
 
   describe("canTransition helper", () => {
     it("returns allowed=true for valid transitions", () => {
-      const result = canTransition("draft", "screening_passed", "editor", "human");
+      const result = canTransition("submitted", "screening_passed", "editor", "human");
       expect(result.allowed).toBe(true);
       expect(result.to).toBe("under_review");
     });
@@ -142,12 +146,12 @@ describe("Editorial State Machine", () => {
     });
 
     it("returns allowed=false for wrong role", () => {
-      const result = canTransition("draft", "screening_passed", "author", "human");
+      const result = canTransition("submitted", "screening_passed", "author", "human");
       expect(result.allowed).toBe(false);
     });
 
     it("returns allowed=false for system actor", () => {
-      const result = canTransition("draft", "screening_passed", "editor", "system");
+      const result = canTransition("submitted", "screening_passed", "editor", "system");
       expect(result.allowed).toBe(false);
     });
   });
@@ -155,10 +159,7 @@ describe("Editorial State Machine", () => {
   describe("getValidTransitions", () => {
     it("returns all valid transitions from draft", () => {
       const transitions = getValidTransitions("draft");
-      expect(transitions.length).toBe(3);
-      expect(transitions.map((t) => t.action)).toContain("screening_passed");
-      expect(transitions.map((t) => t.action)).toContain("screening_failed");
-      expect(transitions.map((t) => t.action)).toContain("withdraw");
+      expect(transitions.map((t) => t.action)).toEqual(["withdraw"]);
     });
   });
 
@@ -183,8 +184,8 @@ describe("Editorial State Machine", () => {
       expect(canAuthorAct("accepted")).toBe(false);
     });
 
-    it("editor can act on all non-terminal states", () => {
-      expect(canEditorAct("draft")).toBe(true);
+    it("editor can act only after submission and before terminal states", () => {
+      expect(canEditorAct("draft")).toBe(false);
       expect(canEditorAct("submitted")).toBe(true);
       expect(canEditorAct("under_review")).toBe(true);
       expect(canEditorAct("revision_requested")).toBe(true);

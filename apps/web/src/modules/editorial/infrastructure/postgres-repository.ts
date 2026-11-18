@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { InferSelectModel } from "drizzle-orm";
 import * as schema from "@/server/db/schema";
@@ -180,7 +180,7 @@ export function createPostgresEditorialRepository<
                 schema.organizations,
                 eq(schema.organizations.id, schema.journals.organizationId),
               )
-              .where(and(eq(schema.submissions.id, submissionId), editorialAccessCondition(editorUserId)))
+              .where(and(eq(schema.submissions.id, submissionId), ne(schema.submissions.status, "draft"), editorialAccessCondition(editorUserId)))
               .limit(1);
 
             return rows[0] ? mapSubmissionRow(rows[0]) : null;
@@ -212,6 +212,7 @@ export function createPostgresEditorialRepository<
           async listSubmissionsForEditor(editorUserId, journalId, statuses) {
             const conditions = [
               eq(schema.journals.id, journalId),
+              ne(schema.submissions.status, "draft"),
               editorialAccessCondition(editorUserId),
             ];
 
@@ -752,7 +753,7 @@ export function createPostgresEditorialRepository<
           schema.organizations,
           eq(schema.organizations.id, schema.journals.organizationId),
         )
-        .where(and(eq(schema.submissions.id, submissionId), editorialAccessCondition(editorUserId)))
+        .where(and(eq(schema.submissions.id, submissionId), ne(schema.submissions.status, "draft"), editorialAccessCondition(editorUserId)))
         .limit(1);
 
       return rows[0] ? mapSubmissionRow(rows[0]) : null;
@@ -784,6 +785,7 @@ export function createPostgresEditorialRepository<
     async listSubmissionsForEditor(editorUserId, journalId, statuses) {
       const conditions = [
         eq(schema.journals.id, journalId),
+        ne(schema.submissions.status, "draft"),
         editorialAccessCondition(editorUserId),
       ];
 

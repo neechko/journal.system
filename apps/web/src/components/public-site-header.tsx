@@ -11,7 +11,7 @@ export function PublicSiteHeader() {
           href="/"
         >
           <span className="min-w-0 leading-tight">
-            <span className="block truncate font-display text-base font-semibold text-ink sm:text-lg">
+            <span className="block font-display text-sm font-semibold leading-tight text-ink sm:text-lg">
               Scholarly Publishing Platform
             </span>
           </span>

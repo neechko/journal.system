@@ -13,6 +13,7 @@ import * as schema from "@/server/db/schema";
 import type {
   AuditEventInput,
   JournalAccess,
+  JournalWorkspaceAccess,
   JournalRole,
   JournalSummary,
   OrganizationSummary,
@@ -294,6 +295,60 @@ export function createPostgresTenancyRepository<
         journalId,
         roles: [...roles],
       };
+    },
+
+    async listJournalWorkspacesForUser(userId): Promise<JournalWorkspaceAccess[]> {
+      const journalRoles = await database
+        .select({
+          journalId: schema.journals.id,
+          journalTitle: schema.journals.title,
+          journalSlug: schema.journals.slug,
+          organizationId: schema.organizations.id,
+          organizationName: schema.organizations.name,
+          organizationSlug: schema.organizations.slug,
+          role: schema.journalMemberships.role,
+        })
+        .from(schema.journalMemberships)
+        .innerJoin(schema.journals, eq(schema.journals.id, schema.journalMemberships.journalId))
+        .innerJoin(schema.organizations, eq(schema.organizations.id, schema.journals.organizationId))
+        .where(and(eq(schema.journalMemberships.userId, userId), isNull(schema.journalMemberships.revokedAt)));
+
+      const adminRoles = await database
+        .select({
+          journalId: schema.journals.id,
+          journalTitle: schema.journals.title,
+          journalSlug: schema.journals.slug,
+          organizationId: schema.organizations.id,
+          organizationName: schema.organizations.name,
+          organizationSlug: schema.organizations.slug,
+        })
+        .from(schema.organizationMemberships)
+        .innerJoin(schema.organizations, eq(schema.organizations.id, schema.organizationMemberships.organizationId))
+        .innerJoin(schema.journals, eq(schema.journals.organizationId, schema.organizations.id))
+        .where(and(eq(schema.organizationMemberships.userId, userId), eq(schema.organizationMemberships.role, "organization_admin")));
+
+      const workspaces = new Map<string, JournalWorkspaceAccess>();
+      for (const row of journalRoles) {
+        const { role: membershipRole, ...workspace } = row;
+        const role = membershipRole as JournalRole;
+        const existing = workspaces.get(row.journalId);
+        if (existing) {
+          if (!existing.roles.includes(role)) existing.roles.push(role);
+        } else {
+          workspaces.set(row.journalId, { ...workspace, roles: [role] });
+        }
+      }
+      for (const row of adminRoles) {
+        const existing = workspaces.get(row.journalId);
+        if (existing) {
+          if (!existing.roles.includes("organization_admin")) existing.roles.push("organization_admin");
+        } else {
+          workspaces.set(row.journalId, { ...row, roles: ["organization_admin"] });
+        }
+      }
+      return [...workspaces.values()].sort((a, b) =>
+        a.organizationName.localeCompare(b.organizationName) || a.journalTitle.localeCompare(b.journalTitle),
+      );
     },
 
     async getOrganizationWorkspace(userId, organizationId) {

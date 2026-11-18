@@ -113,8 +113,9 @@ PostgreSQL adapter.
   author identity currently recorded; co-author and affiliation metadata,
   editorial screening, review, article publication, membership management, and
   production bootstrap are not complete end-to-end user flows. Some domain
-  use cases and read-only publication routes exist; editor and production
-  queues remain placeholders.
+  use cases and read-only publication routes exist. Editor and production
+  queues list role-scoped journal data, while production actions remain
+  unavailable in the UI.
 - Authors can submit an owned draft after attaching a stored manuscript PDF.
   The `draft` → `submitted` transition is audited and makes the record
   read-only. Submission is disabled unless private local development storage is

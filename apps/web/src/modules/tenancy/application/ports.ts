@@ -74,6 +74,13 @@ export interface JournalAccess {
   roles: JournalRole[];
 }
 
+export interface JournalWorkspaceAccess extends JournalAccess {
+  organizationName: string;
+  organizationSlug: string;
+  journalTitle: string;
+  journalSlug: string;
+}
+
 export interface TenancyTransaction {
   isPlatformOperator(userId: string): Promise<boolean>;
   isOrganizationAdmin(userId: string, organizationId: string): Promise<boolean>;
@@ -116,6 +123,7 @@ export interface TenancyRepository {
     userId: string,
     journalId: string,
   ): Promise<JournalAccess | null>;
+  listJournalWorkspacesForUser(userId: string): Promise<JournalWorkspaceAccess[]>;
   getOrganizationWorkspace(
     userId: string,
     organizationId: string,

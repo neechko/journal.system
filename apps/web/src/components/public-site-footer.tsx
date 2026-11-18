@@ -25,12 +25,12 @@ export function PublicSiteFooter() {
           </h2>
           <ul className="mt-4 space-y-3 text-sm text-white/90">
             <li>
-              <Link className="hover:text-white" href="/journals">
+              <Link className="underline decoration-white/50 underline-offset-4 hover:decoration-white" href="/journals">
                 Journal directory
               </Link>
             </li>
             <li>
-              <Link className="hover:text-white" href="/">
+              <Link className="underline decoration-white/50 underline-offset-4 hover:decoration-white" href="/">
                 Platform home
               </Link>
             </li>

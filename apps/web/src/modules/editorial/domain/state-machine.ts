@@ -30,8 +30,6 @@ export interface StateTransition {
 }
 
 const TRANSITIONS: StateTransition[] = [
-  { from: "draft", action: "screening_passed", to: "under_review", requiredRole: "editor", allowedActorTypes: ["human"] },
-  { from: "draft", action: "screening_failed", to: "rejected", requiredRole: "editor", allowedActorTypes: ["human"] },
   { from: "draft", action: "withdraw", to: "withdrawn", requiredRole: "author", allowedActorTypes: ["human"] },
   { from: "submitted", action: "screening_passed", to: "under_review", requiredRole: "editor", allowedActorTypes: ["human"] },
   { from: "submitted", action: "screening_failed", to: "rejected", requiredRole: "editor", allowedActorTypes: ["human"] },
@@ -103,7 +101,7 @@ export function canAuthorAct(status: SubmissionStatus): boolean {
 }
 
 export function canEditorAct(status: SubmissionStatus): boolean {
-  return !isTerminal(status);
+  return status !== "draft" && !isTerminal(status);
 }
 
 export function canReviewerAct(status: SubmissionStatus): boolean {

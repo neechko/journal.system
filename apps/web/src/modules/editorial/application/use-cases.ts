@@ -1,5 +1,5 @@
 import { AppError } from "@/modules/shared/app-error";
-import type { JournalRole, TenancyRepository } from "@/modules/tenancy/application/ports";
+import type { JournalRole, JournalWorkspaceAccess, TenancyRepository } from "@/modules/tenancy/application/ports";
 import { getJournalAccess } from "@/modules/tenancy/application/use-cases";
 import type { SubmissionRepository } from "@/modules/submissions/application/ports";
 import type {
@@ -45,6 +45,16 @@ const EDITOR_ROLES: JournalRole[] = [
   "managing_editor",
   "editor",
 ];
+
+export async function listEditorialJournalsForUser(
+  tenancyRepository: TenancyRepository,
+  userId: string,
+): Promise<JournalWorkspaceAccess[]> {
+  const workspaces = await tenancyRepository.listJournalWorkspacesForUser(userId);
+  return workspaces.filter((workspace) =>
+    workspace.roles.some((role) => EDITOR_ROLES.includes(role)),
+  );
+}
 
 async function assertEditorAccess(
   tenancyRepository: TenancyRepository,
@@ -462,7 +472,19 @@ export async function listSubmissionsForEditor(
   statuses?: SubmissionStatus[]
 ): Promise<EditorialSubmission[]> {
   await assertEditorAccess(tenancyRepository, editorUserId, journalId);
-  return repository.listSubmissionsForEditor(editorUserId, journalId, statuses);
+  const visibleStatuses: SubmissionStatus[] = [
+    "submitted",
+    "under_review",
+    "revision_requested",
+    "accepted",
+    "rejected",
+    "withdrawn",
+  ];
+  const selectedStatuses = statuses
+    ? statuses.filter((status) => visibleStatuses.includes(status))
+    : visibleStatuses;
+  if (selectedStatuses.length === 0) return [];
+  return repository.listSubmissionsForEditor(editorUserId, journalId, selectedStatuses);
 }
 
 export async function getSubmissionDetailForEditor(
