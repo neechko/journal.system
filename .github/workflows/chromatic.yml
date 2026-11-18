@@ -19,6 +19,8 @@ jobs:
   chromatic:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -41,7 +43,7 @@ jobs:
         working-directory: apps/web
 
       - name: Publish to Chromatic
-        if: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
+        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
         uses: chromaui/action@latest
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
