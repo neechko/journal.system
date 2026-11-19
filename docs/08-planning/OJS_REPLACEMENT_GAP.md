@@ -1,7 +1,7 @@
 # Peta kemampuan menuju pengganti OJS
 
 **Status:** Assessment berbasis repository, bukan klaim kesiapan produksi
-**Last reviewed:** 2026-11-18
+**Last reviewed:** 2026-11-19
 
 ## Tujuan dan batas
 
@@ -22,7 +22,7 @@ Penilaian di bawah hanya menyebut **kode yang ada**. `Ada use case` berarti fung
 | DOI dan metadata eksternal | `domain/doi.ts`, tabel `doi_registration` | Tidak ada bukti deposit atau verifikasi Crossref. Nama fungsi lama dapat memberi kesan sudah terdaftar. | Adapter deposit terisolasi, approval manusia, status attempt/response, verifikasi resolver, idempotensi. Jangan tampilkan DOI sebagai terdaftar sebelum bukti diterima. |
 | Discovery | Direktori jurnal dan adapter Meilisearch | Pencarian jurnal terbatas; indeks artikel dan facets belum terbukti beroperasi. | Pencarian artikel dengan visibilitas publik yang benar, pagination, dan sinkronisasi indeks yang dapat dibangun ulang. |
 | Portabilitas dan migrasi OJS | Dokumen JATS dan model domain | Belum ada pipeline impor OJS atau ekspor tenant yang utuh. | Ekspor metadata, teks, berkas, riwayat, identifier, dan pemetaan OJS yang diuji dengan fixture sintetis. |
-| Operasional | GitHub Actions quality, Chromatic, preview, produksi, migrasi | Quality, Chromatic, dan Vercel preview pada draft PR telah lulus. PostgreSQL lokal terhubung, tetapi preview belum memiliki database dan auth sendiri. Workflow produksi manual menyiapkan lint, typecheck, test, build, migrasi, deploy, dan HTTP smoke check; belum ada bukti release produksi atau restore drill. | Siapkan lingkungan preview terisolasi, uji alur ujung ke ujung, lalu verifikasi rollback, restore drill, dan observability sebelum release produksi. |
+| Operasional | GitHub Actions quality, Chromatic, preview, produksi, migrasi | Quality, Chromatic, dan Vercel preview pada draft PR telah lulus. PostgreSQL lokal terhubung, tetapi preview belum memiliki database dan auth sendiri. Workflow produksi manual menyiapkan lint, typecheck, test, build, migrasi, deploy, dan HTTP smoke check. Auto deploy Git pada `main` dinonaktifkan; belum ada bukti release produksi atau restore drill. | Siapkan lingkungan preview terisolasi, uji alur ujung ke ujung, lalu verifikasi rollback, restore drill, dan observability sebelum release produksi. |
 
 ## Invariant lintas alur
 

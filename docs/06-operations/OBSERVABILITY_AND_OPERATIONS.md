@@ -48,6 +48,9 @@ berada dalam satu job berurutan agar aplikasi baru tidak berjalan sebelum
 skema kompatibel tersedia. Migrasi harus diperiksa sebelum release, termasuk
 dampak pada data lama dan rencana pemulihan. Merge ke `main` tidak dengan
 sendirinya menjalankan migrasi atau deploy lewat workflow ini.
+`apps/web/vercel.json` juga menonaktifkan auto deploy Vercel Git untuk branch
+`main`; branch preview tetap dapat dideploy. Release produksi hanya melalui
+workflow manual setelah gate data, auth, storage, dan verifikasi alur terpenuhi.
 `db-migrate.yml` hanya dapat dijalankan manual untuk perbaikan operasional;
 workflow itu tidak lagi berpacu dengan deploy pada setiap push.
 
