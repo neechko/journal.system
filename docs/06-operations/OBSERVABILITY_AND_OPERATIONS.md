@@ -1,7 +1,7 @@
 # Observability and Operations
 
 **Status:** Proposed baseline
-**Last reviewed:** 2026-11-18
+**Last reviewed:** 2026-11-19
 
 ## 1. Observability
 
@@ -41,10 +41,13 @@ pushes, pull requests, and manual dispatch. It uses read-only repository
 permissions and does not require production credentials or an external
 database.
 
-`cd-production.yml` mengulang lint, typecheck, test, dan build sebelum migrasi
-dan deploy. Migrasi serta deploy berada dalam satu job berurutan agar aplikasi
-baru tidak berjalan sebelum skema kompatibel tersedia. Migrasi harus diperiksa
-sebelum merge ke `main`, termasuk dampak pada data lama dan rencana pemulihan.
+`cd-production.yml` hanya berjalan lewat manual dispatch dengan input
+konfirmasi `deploy` dan environment `production`. Workflow mengulang lint,
+typecheck, test, dan build sebelum migrasi dan deploy. Migrasi serta deploy
+berada dalam satu job berurutan agar aplikasi baru tidak berjalan sebelum
+skema kompatibel tersedia. Migrasi harus diperiksa sebelum release, termasuk
+dampak pada data lama dan rencana pemulihan. Merge ke `main` tidak dengan
+sendirinya menjalankan migrasi atau deploy lewat workflow ini.
 `db-migrate.yml` hanya dapat dijalankan manual untuk perbaikan operasional;
 workflow itu tidak lagi berpacu dengan deploy pada setiap push.
 
@@ -54,6 +57,10 @@ dari root repository agar CLI tidak mencoba `apps/web/apps/web`. Perintah npm
 untuk aplikasi tetap berjalan dari `apps/web`. Preview PR harus berhasil sebelum
 merge; perubahan `.env.local` tidak mengubah GitHub Actions Secrets atau
 environment variables di Vercel secara otomatis.
+
+Quality, Chromatic, dan Vercel preview pada draft PR telah lulus pada
+2026-11-19. Preview merespons HTTP 200, tetapi belum memiliki database dan
+provider login terisolasi. Hasil itu belum memenuhi gate release produksi.
 
 ## 6. Operational runbooks to add
 
