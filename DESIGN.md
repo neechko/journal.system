@@ -1,7 +1,7 @@
 # Arah desain platform jurnal
 
 **Status:** Working direction, identitas merek final masih TBD
-**Last reviewed:** 2026-11-18
+**Last reviewed:** 2026-11-20
 **Scope:** situs publik, ruang kerja penulis, editor, reviewer, produksi, dan administrator.
 
 ## Design read
@@ -15,7 +15,7 @@ Antislop adalah filter mutu. Dokumen ini memberi arah. Referensi [OJS](https://p
 | Keputusan | Arah | Alasan |
 |---|---|---|
 | Identitas | Indeks editorial: judul karya, penulis, jurnal, tanggal, versi, dan status disusun seperti rekam ilmiah yang mudah dipindai. | Metadata adalah isi utama produk, bukan dekorasi. |
-| Tipografi | Serif pada judul karya dan teks baca panjang; sans sistem pada navigasi, formulir, tabel, dan status. | Membantu pembacaan panjang sambil menjaga kepadatan ruang kerja. |
+| Tipografi | Dua peran dari satu superfamily: Source Serif 4 untuk judul halaman dan teks baca; Source Sans 3 untuk navigasi, formulir, tabel, status, dan metadata. | Satu keluarga untuk satu peran menjaga suara editorial tetap tenang, sementara sans mempertahankan kepadatan ruang kerja. Dua typeface dari satu superfamily menghindari tabrakan bentuk. |
 | Warna | Dasar kertas dan tinta; satu warna aksi platform yang netral; warna status hanya untuk makna operasional. | Pembaca perlu membedakan konten, aksi, dan status tanpa warna yang berisik. |
 | Warna jurnal | Hanya dari pengaturan jurnal yang disetujui pemilik dan lolos uji kontras. | Masing-masing jurnal memiliki identitas sendiri. Jangan menetapkan warna berdasarkan disiplin atau meniru penerbit lain. |
 | Komposisi | Halaman artikel mengutamakan teks; direktori mengutamakan pencarian dan daftar; ruang kerja mengutamakan antrean dan tindakan berikutnya. | Tiap halaman mengikuti pekerjaan nyata penggunanya. |
@@ -25,6 +25,17 @@ Antislop adalah filter mutu. Dokumen ini memberi arah. Referensi [OJS](https://p
 | Gerak | Umpan balik hover, fokus, aktif, serta pembukaan kontrol singkat; hormati reduced motion. | Interaksi terasa responsif tanpa mengganggu pembacaan. |
 
 Motif berulang adalah **garis metadata** yang memisahkan identitas karya dari isi, dengan label teks yang singkat dan konsisten. Satu fokus utama per layar: judul karya pada artikel, pilihan jurnal pada direktori, dan tugas berikutnya pada ruang kerja. Identitas final, logo, foto, ilustrasi, dan warna merek memerlukan keputusan pemilik; sampai ada keputusan, nama produk ditampilkan sebagai teks dan tidak ada aset yang berpura-pura final.
+
+## Sistem huruf
+
+- **Source Serif 4** memegang suara editorial: judul halaman, judul bagian artikel, teks isi, kutipan, dan judul karya pada daftar. **Source Sans 3** memegang perangkat kerja: navigasi, tombol, formulir, tabel, metadata, label status, dan keterangan gambar. Keduanya berasal dari satu superfamily Adobe, sehingga bentuk huruf saling mengenal tanpa terasa sama.
+- Keduanya versi variabel berlisensi SIL OFL dan di-self-host lewat Fontsource (`@fontsource-variable/source-serif-4`, `@fontsource-variable/source-sans-3`). Tidak ada permintaan runtime ke Google Fonts dan tidak ada ketergantungan pada jaringan pihak ketiga. Subset dipisah `unicode-range`, jadi hanya rentang yang dipakai yang benar-benar diunduh.
+- Serif dimuat dari berkas `opsz`, sehingga `font-optical-sizing: auto` menyesuaikan kontras dan jarak huruf antara judul 86px dan teks 17px tanpa perlu dua keluarga terpisah.
+- Skala tetap rasio 1.25 dengan basis 16px. Judul memakai berat 600 dengan `text-wrap: balance`; paragraf memakai `text-wrap: pretty`. Berat 700 hanya untuk penekanan di dalam teks, bukan untuk semua judul.
+- Teks artikel dibatasi `68ch` (±595px pada 17px) dengan `line-height` 1.7. Tabel, keterangan gambar, dan metadata kembali ke sans supaya tetap padat dan mudah dipindai.
+- Ukuran berkas Latin: serif normal ±120 KB dan italic ±127 KB pada berkas `opsz`; sans normal dan italic masing-masing ±28 KB pada berkas `wght`. Rentang lain hanya diunduh bila ada glifnya.
+- `font-display: swap` berasal dari Fontsource. Pada jaringan lambat, Georgia dapat muncul sesaat sebelum serif selesai dimuat; ini diterima sampai ada pengukuran CLS yang menunjukkan perlunya fallback dengan `size-adjust`.
+- Diukur 2026-11-20: `document.fonts.check` benar untuk kedua keluarga; `.prose-article` 17px/27,6px dengan lebar 595px pada 1440px dan 342px pada 390px; tidak ada luberan horizontal pada 12 tangkapan halaman publik (beranda, direktori, profil jurnal) di terang/gelap dan desktop/mobile.
 
 ## Aturan layar
 

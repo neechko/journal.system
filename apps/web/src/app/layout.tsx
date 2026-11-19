@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import "@fontsource-variable/source-sans-3/wght.css";
+import "@fontsource-variable/source-sans-3/wght-italic.css";
+import "@fontsource-variable/source-serif-4/opsz.css";
+import "@fontsource-variable/source-serif-4/opsz-italic.css";
 import "./globals.css";
 import { ThemeProvider } from "@/design-system/providers/ThemeProvider";
 

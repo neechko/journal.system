@@ -280,7 +280,7 @@ export default async function ArticlePage({ params }: PageProps) {
             <h2 id="fulltext-heading" className="font-display text-2xl text-ink">
               Full Text
             </h2>
-            <div className="prose-article mt-6 max-w-none" dangerouslySetInnerHTML={{ __html: article.htmlContent }} />
+            <div className="prose-article mt-6" dangerouslySetInnerHTML={{ __html: article.htmlContent }} />
           </section>
         )}
 

@@ -1,7 +1,7 @@
 # Design System and Product UX
 
 **Status:** Proposed baseline  
-**Last reviewed:** 2026-11-18
+**Last reviewed:** 2026-11-20
 
 Arah visual dan alasan keputusan ada di `../../DESIGN.md`. Dokumen ini mencatat
 prinsip implementasi; status komponen saat ini tidak otomatis memenuhi semua gate
@@ -52,7 +52,8 @@ bahwa target aksesibilitas telah tercapai.
 - Token visual awal memakai latar paper dan teks ink. Nama token `forest`,
   `lime`, dan `coral` adalah warisan implementasi, bukan identitas merek final.
   Warna jurnal tidak boleh diturunkan dari nama disiplin atau warna penerbit
-  referensi. UI memakai sans sistem; judul dan teks editorial memakai serif.
+  referensi. UI memakai Source Sans 3; judul dan teks editorial memakai Source
+  Serif 4 (lihat bagian 6).
 - Header dan footer publik dipakai bersama oleh beranda, katalog, dan profil
   jurnal. Workspace pengelola memakai token yang sama dengan navigasi privat
   tersendiri; authorization dan guard tetap berada di server.
@@ -61,3 +62,43 @@ bahwa target aksesibilitas telah tercapai.
   ISSN, atau afiliasi fiktif untuk mempercantik tampilan.
 - Target WCAG 2.2 AA belum diaudit. Kontras, keyboard, pembaca layar, zoom, dan
   perangkat bergerak tetap perlu diuji pada iterasi UI berikutnya.
+
+## 6. Tipografi
+
+Keputusan 2026-11-20: dua typeface variabel dari satu superfamily Adobe,
+berlisensi SIL OFL, di-self-host lewat Fontsource. Tidak ada permintaan ke Google
+Fonts dan tidak ada `next/font`.
+
+| Peran | Keluarga | Berkas | Dipakai untuk |
+|---|---|---|---|
+| Editorial | Source Serif 4 Variable | `opsz.css`, `opsz-italic.css` | `h1`, judul bagian artikel, `.prose-article`, kutipan |
+| UI | Source Sans 3 Variable | `wght.css`, `wght-italic.css` | navigasi, tombol, formulir, tabel, metadata, label status, keterangan gambar |
+
+- Impor berada di `src/app/layout.tsx`; token di `src/app/globals.css` (`@theme`)
+  dan cermin TypeScript-nya di `src/design-system/tokens/typography.ts`.
+- `--font-sans`, `--font-display`, dan `--font-serif` adalah nama kanonik.
+  `--font-family-sans`, `--font-family-inter`, `--font-family-serif`, dan
+  `--font-family-display` tetap ada sebagai alias untuk komponen lama dan tidak
+  boleh dipakai pada komponen baru.
+- `font-optical-sizing: auto` dan `font-kerning: normal` dipasang pada `body`,
+  heading, dan `.prose-article`. Jangan mengganti ke `font-optical-sizing: none`
+  tanpa alasan ukuran teks.
+- Skala 1.25 berbasis 16px tidak berubah. Judul memakai berat 600; 700 dipakai
+  untuk penekanan di dalam teks saja.
+- `.prose-article` memakai `font-family: var(--font-display)`,
+  `max-inline-size: 68ch`, `line-height: 1.7`, dan hanya token semantik
+  (`--color-ink`, `--color-muted`, `--color-line`, `--color-line-strong`,
+  `--color-brand*`). Tabel dan `figcaption` di dalamnya kembali ke sans.
+- Berkas Latin: serif `opsz` ±120 KB normal dan ±127 KB italic; sans `wght`
+  ±28 KB per gaya. Subset lain hanya diunduh bila ada glifnya.
+- `font-display: swap` berasal dari Fontsource. Georgia menjadi fallback; jika
+  nanti CLS terukur buruk, tambahkan fallback `@font-face` dengan `size-adjust`,
+  bukan mengganti ke font sistem.
+- `tests/typography-contract.test.ts` menjaga impor Fontsource, urutan keluarga,
+  alias token, optical sizing, measure artikel, dan larangan token warna lama di
+  dalam `.prose-article`. Uji ini tidak mengukur rendering; tangkapan layar dan
+  `document.fonts.check` tetap bagian dari verifikasi manual.
+- Verifikasi 2026-11-20: `tsc --noEmit` bersih, ESLint 0 error (44 warning lama),
+  89 tes Vitest lulus, `next build` sukses, dan 16 tangkapan layar
+  (beranda/direktori/profil jurnal/harness artikel × terang/gelap × 1440/390 px)
+  tanpa luberan horizontal.

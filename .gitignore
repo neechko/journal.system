@@ -14,7 +14,7 @@ apps/web/lint.txt
 plan.txt
 
 # Local visual QA captures
-/.tmp-qa/
+.tmp-qa/
 /apps/web/.tmp_ui_capture.cjs
 
 # Next.js

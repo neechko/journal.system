@@ -46,10 +46,13 @@
   --color-danger-deep: #b91c1c;
 
   /* Type families */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: "Source Sans 3 Variable", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-display: "Source Serif 4 Variable", Georgia, Cambria,
+    "Times New Roman", Times, serif;
+  --font-serif: "Source Serif 4 Variable", Georgia, Cambria, "Times New Roman",
+    Times, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }
@@ -242,12 +245,12 @@
   /* ============================================
      Typography
      ============================================ */
-  /* Font families */
-  --font-family-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Font families — legacy names kept for existing components. */
+  --font-family-sans: var(--font-sans);
   --font-family-inter: var(--font-sans);
-  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  --font-family-serif: Georgia, Cambria, 'Times New Roman', Times, serif;
-  --font-family-display: var(--font-serif);
+  --font-family-mono: var(--font-mono);
+  --font-family-serif: var(--font-serif);
+  --font-family-display: var(--font-display);
 
   /* Font weights */
   --font-weight-light: 300;
@@ -535,6 +538,9 @@ body {
   color: var(--color-ink);
   background-color: var(--color-paper);
   letter-spacing: var(--letter-spacing-normal);
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  font-synthesis-weight: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -585,21 +591,32 @@ body {
    Typography Utilities
    ============================================ */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
-  letter-spacing: var(--letter-spacing-tight);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+  font-optical-sizing: auto;
 }
 
-h1 { font-size: var(--font-size-4); }
-h2 { font-size: var(--font-size-3); }
-h3 { font-size: var(--font-size-2); }
-h4 { font-size: var(--font-size-1); }
-h5 { font-size: var(--font-size-0); }
-h6 { font-size: var(--font-size--1); }
+/* Page titles carry the editorial voice; smaller headings stay in the UI face
+   so compact workspace labels do not turn into display type. */
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-4);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+}
+
+h2 { font-size: var(--font-size-3); line-height: 1.15; }
+h3 { font-size: var(--font-size-2); line-height: 1.25; }
+h4 { font-size: var(--font-size-1); line-height: 1.3; }
+h5 { font-size: var(--font-size-0); line-height: 1.4; }
+h6 { font-size: var(--font-size--1); line-height: 1.4; }
 
 p {
   margin-bottom: var(--spacing-4);
   line-height: var(--line-height-relaxed);
+  text-wrap: pretty;
 }
 
 a {
@@ -1170,27 +1187,46 @@ pre code {
 /* ============================================
    Article prose (structured HTML content)
    Self-contained: no @tailwindcss/typography dependency.
+   Editorial serif at a capped measure; UI furniture (tables,
+   captions) drops back to the sans face.
    ============================================ */
 .prose-article {
-  font-family: var(--font-family-serif);
+  font-family: var(--font-display);
   font-size: var(--font-size-component-articleBody);
-  line-height: 1.75;
-  color: var(--color-text-primary);
+  line-height: 1.7;
+  max-inline-size: 68ch;
+  color: var(--color-ink);
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
 }
 
 .prose-article > :first-child {
   margin-top: 0;
 }
 
+.prose-article h2,
+.prose-article h3,
+.prose-article h4 {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  color: var(--color-ink);
+  scroll-margin-block-start: 6rem;
+}
+
 .prose-article h2 {
   font-size: 1.5rem;
-  margin-top: 2.25rem;
+  margin-top: 2.5rem;
   margin-bottom: 0.75rem;
 }
 
 .prose-article h3 {
   font-size: 1.25rem;
-  margin-top: 1.75rem;
+  margin-top: 2rem;
   margin-bottom: 0.5rem;
 }
 
@@ -1202,17 +1238,6 @@ pre code {
 
 .prose-article p {
   margin-bottom: 1rem;
-}
-
-.prose-article a {
-  color: var(--color-forest);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
-
-.prose-article a:hover {
-  color: var(--color-forest-deep);
 }
 
 .prose-article ul,
@@ -1231,32 +1256,63 @@ pre code {
 
 .prose-article li {
   margin-bottom: 0.375rem;
+  padding-left: 0.25rem;
+}
+
+.prose-article li::marker {
+  color: var(--color-muted);
+}
+
+.prose-article a {
+  color: var(--color-forest);
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.06em;
+  text-decoration-color: color-mix(in oklab, var(--color-forest) 45%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+.prose-article a:hover {
+  color: var(--color-forest-deep);
+  text-decoration-color: currentColor;
+}
+
+.prose-article sup,
+.prose-article sub {
+  line-height: 0;
+  font-size: 0.7em;
 }
 
 .prose-article blockquote {
-  margin: 1.5rem 0;
-  padding: 0.75rem 1.25rem;
-  border-left: 3px solid var(--color-forest);
-  background-color: var(--color-background-secondary);
+  margin: 1.75rem 0;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  border-left: 3px solid var(--color-coral);
+  color: var(--color-muted);
   font-style: italic;
-  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.prose-article blockquote > :last-child {
+  margin-bottom: 0;
 }
 
 .prose-article code {
-  font-family: var(--font-family-mono);
-  font-size: 0.9em;
-  background-color: var(--color-background-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background-color: var(--color-paper-deep);
   padding: 0.125em 0.375em;
   border-radius: 4px;
 }
 
 .prose-article pre {
   margin: 1.5rem 0;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   overflow-x: auto;
-  border-radius: 8px;
-  background-color: var(--color-background-inverse);
-  color: var(--color-text-inverse);
+  border-radius: 6px;
+  border: 1px solid var(--color-brand-line);
+  background-color: var(--color-brand);
+  color: var(--color-brand-ink);
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
 .prose-article pre code {
@@ -1269,41 +1325,49 @@ pre code {
 .prose-article figure {
   max-width: 100%;
   height: auto;
-  border-radius: 8px;
+}
+
+.prose-article img {
+  border-radius: 4px;
 }
 
 .prose-article figcaption {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  font-family: var(--font-family-sans);
-  color: var(--color-text-secondary);
-  text-align: center;
+  margin-top: 0.625rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+  text-wrap: pretty;
 }
 
 .prose-article table {
   width: 100%;
-  margin: 1.5rem 0;
+  margin: 1.75rem 0;
   border-collapse: collapse;
-  font-family: var(--font-family-sans);
-  font-size: 0.875rem;
+  border-top: 2px solid var(--color-line-strong);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-component-tableCell);
+  font-variant-numeric: tabular-nums;
 }
 
 .prose-article th,
 .prose-article td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border-primary);
+  border-bottom: 1px solid var(--color-line);
   text-align: left;
+  vertical-align: top;
 }
 
 .prose-article th {
   font-weight: var(--font-weight-semibold);
-  background-color: var(--color-background-secondary);
+  background-color: var(--color-paper-deep);
+  border-bottom-color: var(--color-line-strong);
 }
 
 .prose-article hr {
-  margin: 2rem 0;
+  margin: 2.5rem 0;
   border: 0;
-  border-top: 1px solid var(--color-border-primary);
+  border-top: 1px solid var(--color-line);
 }
 } /* end @layer components */
 

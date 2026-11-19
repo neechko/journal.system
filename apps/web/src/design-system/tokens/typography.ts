@@ -1,15 +1,19 @@
 /**
  * Design System Typography Tokens
  * Modular scale (1.25 ratio) — audit from Taylor & Francis, Nature, PLOS
- * System font stack with Inter fallback for consistency
+ * Families: Source Sans 3 (UI) + Source Serif 4 (editorial), the Adobe
+ * superfamily. Both are OFL and self-hosted through Fontsource; no request
+ * leaves the origin at runtime.
  */
 
 // ============================================
 // Font Families
 // ============================================
 export const fontFamily = {
-  // System UI font stack (performant, native feel)
+  // UI face — navigation, forms, tables, status, metadata
   sans: [
+    'Source Sans 3 Variable',
+    'ui-sans-serif',
     'system-ui',
     '-apple-system',
     'BlinkMacSystemFont',
@@ -20,9 +24,10 @@ export const fontFamily = {
     'sans-serif',
   ].join(', '),
 
-  // Inter as custom font (loaded via next/font)
+  // Kept as an alias so older components keep resolving to the UI face.
   inter: [
-    'Inter',
+    'Source Sans 3 Variable',
+    'ui-sans-serif',
     'system-ui',
     '-apple-system',
     'BlinkMacSystemFont',
@@ -43,8 +48,19 @@ export const fontFamily = {
     'monospace',
   ].join(', '),
 
-  // Serif for article body text (optional, journal-specific)
+  // Editorial face — page titles, article text, pull quotes
   serif: [
+    'Source Serif 4 Variable',
+    'Georgia',
+    'Cambria',
+    'Times New Roman',
+    'Times',
+    'serif',
+  ].join(', '),
+
+  // Display is the same family; the optical-size axis does the work.
+  display: [
+    'Source Serif 4 Variable',
     'Georgia',
     'Cambria',
     'Times New Roman',
@@ -170,19 +186,19 @@ export const textStyle = {
   // Display
   displayLarge: {
     fontSize: fontSize['6xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.tight,
     letterSpacing: letterSpacing.tight,
   },
   displayMedium: {
     fontSize: fontSize['5xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.tight,
     letterSpacing: letterSpacing.tight,
   },
   displaySmall: {
     fontSize: fontSize['4xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.tight,
     letterSpacing: letterSpacing.tight,
   },
@@ -190,7 +206,7 @@ export const textStyle = {
   // Headlines
   headlineLarge: {
     fontSize: fontSize['3xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.snug,
     letterSpacing: letterSpacing.tight,
   },
@@ -273,11 +289,12 @@ export const textStyle = {
     fontWeight: fontWeight.normal,
     lineHeight: lineHeight.relaxed,
     letterSpacing: letterSpacing.normal,
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
+    fontOpticalSizing: 'auto',
   },
   articleTitle: {
     fontSize: fontSize['3xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.tight,
     letterSpacing: letterSpacing.tight,
   },
@@ -328,6 +345,7 @@ export const typographyCSSVars = {
   '--font-family-inter': fontFamily.inter,
   '--font-family-mono': fontFamily.mono,
   '--font-family-serif': fontFamily.serif,
+  '--font-family-display': fontFamily.display,
 
   // Font weights
   '--font-weight-light': fontWeight.light,
