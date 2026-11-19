@@ -229,7 +229,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {loading && (
           <span
             className="btn-spinner"
-            style={{ ...spinnerStyles as React.CSSProperties, color: 'currentColor' }}
+            style={{ color: 'currentColor' }}
             aria-hidden="true"
           />
         )}

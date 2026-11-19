@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, userEvent, waitFor, within } from '@storybook/test';
 import { useState } from 'react';
 import { Button } from '../Button/Button';
 import { Modal } from './Modal';
@@ -103,6 +104,10 @@ export const Default: Story = {
   args: {
     title: 'Modal Title',
     description: 'This is a description of the modal.',
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open Modal' }));
+    await waitFor(() => expect(within(canvasElement.ownerDocument.body).getByRole('dialog')).toBeVisible());
   },
 };
 

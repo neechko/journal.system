@@ -36,101 +36,96 @@ export interface ModalProps {
   preventScroll?: boolean;
 }
 
-const sizeStyles: Record<ModalSize, string> = {
-  sm: 'max-width: 400px;',
-  md: 'max-width: 560px;',
-  lg: 'max-width: 720px;',
-  xl: 'max-width: 960px;',
-  full: 'max-width: calc(100vw - var(--spacing-8)); width: calc(100vw - var(--spacing-8));',
+const sizeStyles: Record<ModalSize, React.CSSProperties> = {
+  sm: { maxWidth: 400 },
+  md: { maxWidth: 560 },
+  lg: { maxWidth: 720 },
+  xl: { maxWidth: 960 },
+  full: {
+    maxWidth: 'calc(100vw - var(--spacing-8))',
+    width: 'calc(100vw - var(--spacing-8))',
+  },
 };
 
-const baseStyles = `
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: var(--color-surface-primary);
-  border-radius: 12px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.16), 0 8px 16px rgba(0, 0, 0, 0.08);
-  z-index: var(--z-index-modal);
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-`;
+const baseStyles: React.CSSProperties = {
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  backgroundColor: 'var(--color-surface-primary)',
+  borderRadius: 12,
+  boxShadow: '0 24px 48px rgba(0, 0, 0, 0.16), 0 8px 16px rgba(0, 0, 0, 0.08)',
+  zIndex: 'var(--z-index-modal)',
+  maxHeight: '90vh',
+  display: 'flex',
+  flexDirection: 'column',
+  width: '100%',
+};
 
-const overlayStyles = `
-  position: fixed;
-  inset: 0;
-  background-color: var(--color-overlay-modal);
-  z-index: var(--z-index-modal-backdrop);
-`;
+const overlayStyles: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  backgroundColor: 'var(--color-overlay-modal)',
+  zIndex: 'var(--z-index-modal-backdrop)',
+};
 
-const headerStyles = `
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-4);
-  padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
-  border-bottom: 1px solid var(--color-border-primary);
-  flex-shrink: 0;
-`;
+const headerStyles: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: 'var(--spacing-4)',
+  padding: 'var(--spacing-6) var(--spacing-6) var(--spacing-4)',
+  borderBottom: '1px solid var(--color-border-primary)',
+  flexShrink: 0,
+};
 
-const titleStyles = `
-  font-size: var(--font-size-component-modalTitle);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-tight);
-  color: var(--color-text-primary);
-  margin: 0;
-  flex: 1;
-`;
+const titleStyles: React.CSSProperties = {
+  fontSize: 'var(--font-size-component-modalTitle)',
+  fontWeight: 'var(--font-weight-semibold)',
+  lineHeight: 'var(--line-height-tight)',
+  color: 'var(--color-text-primary)',
+  margin: 0,
+  flex: 1,
+};
 
-const descriptionStyles = `
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal);
-  color: var(--color-text-secondary);
-  margin: var(--spacing-1) 0 0 0;
-`;
+const descriptionStyles: React.CSSProperties = {
+  fontSize: 'var(--font-size-sm)',
+  lineHeight: 'var(--line-height-normal)',
+  color: 'var(--color-text-secondary)',
+  margin: 'var(--spacing-1) 0 0',
+};
 
-const closeButtonStyles = `
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background-color: transparent;
-  border: none;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  transition: var(--transition-component-button);
-  flex-shrink: 0;
-  &:hover {
-    background-color: var(--color-interactive-hover);
-    color: var(--color-text-primary);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--color-border-focus);
-    outline-offset: 2px;
-  }
-`;
+const closeButtonStyles: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 32,
+  height: 32,
+  borderRadius: 8,
+  backgroundColor: 'transparent',
+  border: 0,
+  color: 'var(--color-text-tertiary)',
+  cursor: 'pointer',
+  transition: 'var(--transition-component-button)',
+  flexShrink: 0,
+};
 
-const contentStyles = `
-  padding: var(--spacing-6);
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-`;
+const contentStyles: React.CSSProperties = {
+  padding: 'var(--spacing-6)',
+  overflowY: 'auto',
+  flex: 1,
+  minHeight: 0,
+};
 
-const footerStyles = `
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--spacing-3);
-  padding: var(--spacing-4) var(--spacing-6) var(--spacing-6);
-  border-top: 1px solid var(--color-border-primary);
-  flex-shrink: 0;
-`;
+const footerStyles: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  gap: 'var(--spacing-3)',
+  padding: 'var(--spacing-4) var(--spacing-6) var(--spacing-6)',
+  borderTop: '1px solid var(--color-border-primary)',
+  flexShrink: 0,
+};
 
 const animationStyles = `
   @keyframes modal-enter {
@@ -294,11 +289,10 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>((
     <div
       className={overlayClassName}
       style={{
-        ...overlayStyles as React.CSSProperties,
+        ...overlayStyles,
         animation: prefersReduced ? 'none' : 'overlay-enter 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-      } as React.CSSProperties}
+      }}
       onClick={handleOverlayClick}
-      aria-hidden="true"
     >
       <div
         ref={contentRef}
@@ -308,13 +302,13 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>((
         aria-describedby={ariaDescribedBy}
         className={className}
         style={{
-          ...baseStyles as React.CSSProperties,
-          ...sizeStyles[size] as React.CSSProperties,
+          ...baseStyles,
+          ...sizeStyles[size],
           animation: prefersReduced ? 'none' : 'modal-enter 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-        } as React.CSSProperties}
+        }}
       >
         {(title || header || showCloseButton) && (
-          <header style={headerStyles as React.CSSProperties}>
+          <header style={headerStyles}>
             {header ? (
               header
             ) : (
@@ -322,7 +316,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>((
                 {title && (
                   <h2
                     id={titleId}
-                    style={titleStyles as React.CSSProperties}
+                    style={titleStyles}
                   >
                     {title}
                   </h2>
@@ -330,7 +324,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>((
                 {description && (
                   <p
                     id={descriptionId}
-                    style={descriptionStyles as React.CSSProperties}
+                    style={descriptionStyles}
                   >
                     {description}
                   </p>
@@ -341,7 +335,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>((
               <button
                 type="button"
                 onClick={onClose}
-                style={closeButtonStyles as React.CSSProperties}
+                style={closeButtonStyles}
                 aria-label="Close modal"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -355,19 +349,29 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>((
 
         <div
           className={contentClassName}
-          style={contentStyles as React.CSSProperties}
+          style={contentStyles}
         >
           {children}
         </div>
 
         {footer && (
-          <footer style={footerStyles as React.CSSProperties}>
+          <footer style={footerStyles}>
             {footer}
           </footer>
         )}
       </div>
 
-      <style jsx>{animationStyles}</style>
+      <style jsx>{`
+        ${animationStyles}
+        button[aria-label="Close modal"]:hover {
+          background-color: var(--color-interactive-hover);
+          color: var(--color-text-primary);
+        }
+        button[aria-label="Close modal"]:focus-visible {
+          outline: 2px solid var(--color-border-focus);
+          outline-offset: 2px;
+        }
+      `}</style>
     </div>
   );
 
