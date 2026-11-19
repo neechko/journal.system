@@ -62,11 +62,14 @@ merge; perubahan `.env.local` tidak mengubah GitHub Actions Secrets atau
 environment variables di Vercel secara otomatis.
 
 Quality dan Vercel preview pada draft PR telah lulus pada 2026-11-19.
-Chromatic berhasil mengunggah Storybook, tetapi status UI Tests gagal pada
-build 4 dan 5; opsi `exitOnceUploaded` sebelumnya membuat job selesai sebelum
-hasil tes visual keluar. Workflow kini menunggu tes dan gagal bila perubahan
-visual belum ditinjau (`exitZeroOnChanges: false`). Review hasil Chromatic
-sebelum merge. Preview merespons HTTP 200, tetapi belum memiliki database dan
+Chromatic berhasil mengunggah Storybook. Build 6 menemukan satu error render
+komponen; perbaikannya telah diuji di browser lokal. Build 7 menyelesaikan 27
+story tanpa error render, tetapi semua 27 snapshot awal masih memerlukan
+peninjauan dan penerimaan sebagai baseline. Opsi `exitOnceUploaded` sebelumnya
+membuat job selesai sebelum hasil tes visual keluar. Workflow kini menunggu
+tes dan gagal bila perubahan visual belum ditinjau (`exitZeroOnChanges: false`).
+Review baseline di Chromatic sebelum merge; jangan menerima perubahan visual
+secara otomatis. Preview merespons HTTP 200, tetapi belum memiliki database dan
 provider login terisolasi. Hasil itu belum memenuhi gate release produksi.
 
 ## 6. Operational runbooks to add
