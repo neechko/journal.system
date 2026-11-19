@@ -50,4 +50,4 @@ jobs:
           workingDir: apps/web
           storybookBuildDir: storybook-static
           autoAcceptChanges: ${{ github.ref == 'refs/heads/main' && 'main' || '' }}
-          exitOnceUploaded: true
+          exitZeroOnChanges: false

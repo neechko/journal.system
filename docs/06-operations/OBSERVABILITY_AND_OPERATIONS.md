@@ -61,8 +61,12 @@ untuk aplikasi tetap berjalan dari `apps/web`. Preview PR harus berhasil sebelum
 merge; perubahan `.env.local` tidak mengubah GitHub Actions Secrets atau
 environment variables di Vercel secara otomatis.
 
-Quality, Chromatic, dan Vercel preview pada draft PR telah lulus pada
-2026-11-19. Preview merespons HTTP 200, tetapi belum memiliki database dan
+Quality dan Vercel preview pada draft PR telah lulus pada 2026-11-19.
+Chromatic berhasil mengunggah Storybook, tetapi status UI Tests gagal pada
+build 4 dan 5; opsi `exitOnceUploaded` sebelumnya membuat job selesai sebelum
+hasil tes visual keluar. Workflow kini menunggu tes dan gagal bila perubahan
+visual belum ditinjau (`exitZeroOnChanges: false`). Review hasil Chromatic
+sebelum merge. Preview merespons HTTP 200, tetapi belum memiliki database dan
 provider login terisolasi. Hasil itu belum memenuhi gate release produksi.
 
 ## 6. Operational runbooks to add
