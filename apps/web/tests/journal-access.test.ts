@@ -23,6 +23,7 @@ import {
   getSubmissionDetailForEditor,
   listEditorialJournalsForUser,
   listSubmissionsForEditor,
+  recordDecision,
 } from "../src/modules/editorial/application/use-cases";
 import {
   listAcceptedSubmissionsUseCase,
@@ -318,6 +319,99 @@ describe("journal-scoped access", () => {
       "journal-editor",
       draft.id,
     )).toBeNull();
+  });
+
+  it("snapshots real stored reviewer recommendations for an editorial decision", async () => {
+    const db = database();
+    await db.update(schema.submissions)
+      .set({ status: "under_review" })
+      .where(sql`${schema.submissions.id} = ${fixtures.submissionAId}`);
+    const [assignment] = await db.insert(schema.reviewerAssignments).values({
+      submissionId: fixtures.submissionAId,
+      reviewerUserId: "reviewer",
+      role: "reviewer",
+      assignedBy: "journal-editor",
+      isBlind: true,
+    }).returning();
+    await db.insert(schema.reviewReports).values([
+      {
+        assignmentId: assignment.id,
+        submissionId: fixtures.submissionAId,
+        reviewerUserId: "reviewer",
+        version: 1,
+        recommendation: "reject",
+        commentsToAuthor: "First assessment",
+      },
+      {
+        assignmentId: assignment.id,
+        submissionId: fixtures.submissionAId,
+        reviewerUserId: "reviewer",
+        version: 2,
+        recommendation: "accept",
+        commentsToAuthor: "Revised assessment",
+      },
+    ]);
+
+    const decision = await recordDecision(
+      createPostgresEditorialRepository(db),
+      createPostgresTenancyRepository(db),
+      {
+        submissionId: fixtures.submissionAId,
+        editorUserId: "journal-editor",
+        outcome: "accept",
+        rationale: "Editor approved after reviewing the revised report",
+      },
+    );
+    expect(decision.reviewerRecommendations).toEqual([{
+      assignmentId: assignment.id,
+      reviewerUserId: "reviewer",
+      role: "reviewer",
+      recommendation: "accept",
+      reviewVersion: 2,
+    }]);
+    const stored = await db.select().from(schema.editorialDecisions);
+    expect(stored).toHaveLength(1);
+    expect(stored[0].reviewerRecommendations).toEqual(decision.reviewerRecommendations);
+    const repository = createPostgresEditorialRepository(db);
+    await expect(repository.transaction((tx) => tx.recordDecision({
+      submissionId: fixtures.submissionAId,
+      editorUserId: "journal-editor",
+      outcome: "reject",
+      rationale: "Stale decision",
+      expectedStatus: "under_review",
+    }))).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(await db.select().from(schema.editorialDecisions)).toHaveLength(1);
+  });
+
+  it("returns reviewer scores from JSONB without parsing them twice", async () => {
+    const db = database();
+    await db.update(schema.submissions)
+      .set({ status: "under_review" })
+      .where(sql`${schema.submissions.id} = ${fixtures.submissionAId}`);
+    const [assignment] = await db.insert(schema.reviewerAssignments).values({
+      submissionId: fixtures.submissionAId,
+      reviewerUserId: "reviewer",
+      role: "reviewer",
+      assignedBy: "journal-editor",
+      isBlind: true,
+    }).returning();
+    const scores = {
+      originality: 4,
+      methodology: 5,
+      clarity: null,
+      significance: 3,
+      overall: 4,
+    };
+    const report = await createPostgresEditorialRepository(db).transaction((tx) => tx.submitReview({
+      assignmentId: assignment.id,
+      reviewerUserId: "reviewer",
+      recommendation: "minor_revision",
+      commentsToAuthor: "Methods need more detail",
+      scores,
+    }));
+    expect(report.scores).toEqual(scores);
+    const stored = await db.select().from(schema.reviewReports);
+    expect(stored[0].scores).toEqual(scores);
   });
 
   it("resolves organization admins and journal roles to explicit scopes", async () => {

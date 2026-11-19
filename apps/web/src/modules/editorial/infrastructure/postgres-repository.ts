@@ -1,7 +1,11 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { InferSelectModel } from "drizzle-orm";
+import { z } from "zod";
 import * as schema from "@/server/db/schema";
+import { AppError } from "@/modules/shared/app-error";
+import type { ReviewRecommendationSummary } from "../domain/decision";
+import type { ReviewScores } from "../domain/review";
 import type {
   EditorialRepository,
   EditorialTransaction,
@@ -16,7 +20,7 @@ import type {
   UnassignReviewerInput,
   SubmitReviewInput,
   RequestRevisionInput,
-  RecordDecisionInput,
+  RecordDecisionWriteInput,
   WithdrawSubmissionInput,
   SubmissionAuthor,
   SubmissionManuscript,
@@ -407,7 +411,7 @@ export function createPostgresEditorialRepository<
                 recommendation,
                 commentsToAuthor,
                 commentsToEditor,
-                scores: scores ? JSON.stringify(scores) : null,
+                scores: scores ?? null,
               })
               .returning({
                 id: schema.reviewReports.id,
@@ -432,7 +436,7 @@ export function createPostgresEditorialRepository<
           },
 
           async requestRevision(input: RequestRevisionInput) {
-            const { submissionId, editorUserId, reason, reviewerRecommendations } = input;
+            const { submissionId, reason } = input;
 
             const now = new Date();
             const [updated] = await tx
@@ -443,11 +447,14 @@ export function createPostgresEditorialRepository<
                 revisionRequestedAt: now,
                 revisionReason: reason,
               })
-              .where(eq(schema.submissions.id, submissionId))
+              .where(and(
+                eq(schema.submissions.id, submissionId),
+                eq(schema.submissions.status, "under_review"),
+              ))
               .returning({ id: schema.submissions.id });
 
             if (!updated) {
-              throw new Error("Submission not found");
+              throw new AppError("CONFLICT", "Submission state changed before revision request.");
             }
 
             const row = await selectSubmissionRowById(submissionId);
@@ -458,8 +465,8 @@ export function createPostgresEditorialRepository<
             return mapSubmissionRow(row);
           },
 
-          async recordDecision(input: RecordDecisionInput) {
-            const { submissionId, editorUserId, outcome, rationale, reviewerRecommendations } = input;
+          async recordDecision(input: RecordDecisionWriteInput) {
+            const { submissionId, editorUserId, outcome, rationale, expectedStatus } = input;
 
             let newStatus: "accepted" | "rejected" | "revision_requested";
             if (outcome === "accept") newStatus = "accepted";
@@ -478,14 +485,38 @@ export function createPostgresEditorialRepository<
                   ? { revisionRequestedAt: now, revisionReason: rationale }
                   : {}),
               })
-              .where(eq(schema.submissions.id, submissionId))
+              .where(and(
+                eq(schema.submissions.id, submissionId),
+                eq(schema.submissions.status, expectedStatus),
+              ))
               .returning({
                 id: schema.submissions.id,
               });
 
             if (!updated) {
-              throw new Error("Submission not found");
+              throw new AppError("CONFLICT", "Submission state changed before decision.");
             }
+
+            const reviewRows = await tx
+              .select({
+                assignmentId: schema.reviewReports.assignmentId,
+                reviewerUserId: schema.reviewReports.reviewerUserId,
+                role: schema.reviewerAssignments.role,
+                recommendation: schema.reviewReports.recommendation,
+                reviewVersion: schema.reviewReports.version,
+              })
+              .from(schema.reviewReports)
+              .innerJoin(schema.reviewerAssignments, and(
+                eq(schema.reviewerAssignments.id, schema.reviewReports.assignmentId),
+                eq(schema.reviewerAssignments.submissionId, submissionId),
+              ))
+              .where(eq(schema.reviewReports.submissionId, submissionId))
+              .orderBy(asc(schema.reviewReports.assignmentId), desc(schema.reviewReports.version));
+            const latestReviews = new Map<string, ReviewRecommendationSummary>();
+            for (const row of reviewRows) {
+              if (!latestReviews.has(row.assignmentId)) latestReviews.set(row.assignmentId, row);
+            }
+            const reviewerRecommendations = [...latestReviews.values()];
 
             const [decision] = await tx
               .insert(schema.editorialDecisions)
@@ -494,7 +525,7 @@ export function createPostgresEditorialRepository<
                 editorUserId,
                 outcome,
                 rationale,
-                reviewerRecommendations: JSON.stringify(reviewerRecommendations),
+                reviewerRecommendations,
               })
               .returning({
                 id: schema.editorialDecisions.id,
@@ -1124,6 +1155,20 @@ function mapAssignmentRow(row: AssignmentRow): ReviewerAssignment {
 
 type ReviewReportRow = InferSelectModel<typeof schema.reviewReports>;
 
+const reviewScoresSchema = z.object({
+  originality: z.number().int().min(1).max(5).nullable(),
+  methodology: z.number().int().min(1).max(5).nullable(),
+  clarity: z.number().int().min(1).max(5).nullable(),
+  significance: z.number().int().min(1).max(5).nullable(),
+  overall: z.number().int().min(1).max(5).nullable(),
+});
+
+function readReviewScores(value: unknown): ReviewScores | null {
+  if (value === null) return null;
+  const parsed: unknown = typeof value === "string" ? JSON.parse(value) : value;
+  return reviewScoresSchema.parse(parsed);
+}
+
 function mapReviewReportRow(row: ReviewReportRow): ReviewReport {
   return {
     id: row.id,
@@ -1134,13 +1179,26 @@ function mapReviewReportRow(row: ReviewReportRow): ReviewReport {
     recommendation: row.recommendation,
     commentsToAuthor: row.commentsToAuthor,
     commentsToEditor: row.commentsToEditor,
-    scores: row.scores ? JSON.parse(row.scores as string) : null,
+    scores: readReviewScores(row.scores),
     submittedAt: row.submittedAt,
     acknowledgedAt: row.acknowledgedAt,
   };
 }
 
 type DecisionRow = InferSelectModel<typeof schema.editorialDecisions>;
+
+const recommendationSnapshotSchema = z.array(z.object({
+  assignmentId: z.string(),
+  reviewerUserId: z.string(),
+  role: z.string(),
+  recommendation: z.string(),
+  reviewVersion: z.number().int(),
+}));
+
+function readRecommendationSnapshot(value: unknown): ReviewRecommendationSummary[] {
+  const parsed: unknown = typeof value === "string" ? JSON.parse(value) : value;
+  return recommendationSnapshotSchema.parse(parsed);
+}
 
 function mapDecisionRow(row: DecisionRow): EditorialDecision {
   return {
@@ -1149,7 +1207,7 @@ function mapDecisionRow(row: DecisionRow): EditorialDecision {
     editorUserId: row.editorUserId,
     outcome: row.outcome,
     rationale: row.rationale,
-    reviewerRecommendations: row.reviewerRecommendations ? JSON.parse(row.reviewerRecommendations as string) : [],
+    reviewerRecommendations: readRecommendationSnapshot(row.reviewerRecommendations),
     createdAt: row.createdAt,
     communicatedAt: row.communicatedAt,
   };

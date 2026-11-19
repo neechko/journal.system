@@ -34,10 +34,6 @@ import {
   createReviewReport,
   type ReviewReport as DomainReviewReport,
 } from "../domain/review";
-import {
-  createEditorialDecision,
-  type EditorialDecision as DomainEditorialDecision,
-} from "../domain/decision";
 
 const EDITOR_ROLES: JournalRole[] = [
   "organization_admin",
@@ -327,7 +323,7 @@ export async function requestRevision(
   tenancyRepository: TenancyRepository,
   input: RequestRevisionInput
 ): Promise<EditorialSubmission> {
-  const { submissionId, editorUserId, reason, reviewerRecommendations } = input;
+  const { submissionId, editorUserId, reason } = input;
 
   const submission = await repository.findSubmissionForEditor(editorUserId, submissionId);
   if (!submission) {
@@ -347,7 +343,6 @@ export async function requestRevision(
       submissionId,
       editorUserId,
       reason,
-      reviewerRecommendations,
     });
 
     await tx.insertAuditEvent({
@@ -374,7 +369,7 @@ export async function recordDecision(
   tenancyRepository: TenancyRepository,
   input: RecordDecisionInput
 ): Promise<EditorialDecision> {
-  const { submissionId, editorUserId, outcome, rationale, reviewerRecommendations } = input;
+  const { submissionId, editorUserId, outcome, rationale } = input;
 
   const submission = await repository.findSubmissionForEditor(editorUserId, submissionId);
   if (!submission) {
@@ -386,11 +381,10 @@ export async function recordDecision(
   if (submission.status !== "under_review" && submission.status !== "revision_requested") {
     throw new AppError("INVALID_STATE", "Decision can only be recorded when submission is under review or revision requested.");
   }
+  const expectedStatus = submission.status;
 
   const action: EditorialAction = outcome === "accept" ? "accept" : outcome === "reject" ? "reject" : "revision_requested";
   const newStatus = applyTransition(submission.status, action, "editor", "human");
-
-  const decision = createEditorialDecision(submissionId, editorUserId, outcome, rationale, reviewerRecommendations);
 
   return repository.transaction(async (tx) => {
     const created = await tx.recordDecision({
@@ -398,7 +392,7 @@ export async function recordDecision(
       editorUserId,
       outcome,
       rationale,
-      reviewerRecommendations,
+      expectedStatus,
     });
 
     await tx.insertAuditEvent({

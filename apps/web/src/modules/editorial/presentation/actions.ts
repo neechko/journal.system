@@ -1,8 +1,6 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { AppError } from "@/modules/shared/app-error";
 import { createPostgresTenancyRepository } from "@/modules/tenancy/infrastructure/postgres-repository";
 import { createPostgresEditorialRepository } from "../infrastructure/postgres-repository";
@@ -14,8 +12,6 @@ import {
   requestRevision,
   recordDecision,
   withdrawSubmission,
-  listSubmissionsForEditor,
-  getSubmissionDetailForEditor,
 } from "../application/use-cases";
 import {
   screeningInputSchema,
@@ -43,14 +39,30 @@ async function getSessionUserId() {
   return (await auth())?.user?.id ?? null;
 }
 
+const INVALID_JSON = Symbol("invalid-json");
+
+function parseOptionalJson(value: FormDataEntryValue | null, fallback: unknown): unknown {
+  if (value === null || value === "") return fallback;
+  if (typeof value !== "string" || value.length > 50_000) return INVALID_JSON;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return INVALID_JSON;
+  }
+}
+
 export async function screenSubmissionAction(
   _previousState: { status: "error" | "success"; message: string },
   formData: FormData
 ) {
+  const pass = formData.get("pass");
+  if (pass !== "true" && pass !== "false") {
+    return { status: "error", message: "Select a screening decision." };
+  }
   const parsed = screeningInputSchema.safeParse({
     submissionId: formData.get("submissionId"),
     editorUserId: formData.get("editorUserId"),
-    pass: formData.get("pass") === "true",
+    pass: pass === "true",
     reason: formData.get("reason"),
   });
 
@@ -86,13 +98,17 @@ export async function assignReviewerAction(
   _previousState: { status: "error" | "success"; message: string },
   formData: FormData
 ) {
+  const isBlind = formData.get("isBlind");
+  if (isBlind !== null && isBlind !== "true" && isBlind !== "false") {
+    return { status: "error", message: "Invalid blind-review setting." };
+  }
   const parsed = assignReviewerInputSchema.safeParse({
     submissionId: formData.get("submissionId"),
     editorUserId: formData.get("editorUserId"),
     reviewerUserId: formData.get("reviewerUserId"),
     role: formData.get("role"),
     dueAt: formData.get("dueAt"),
-    isBlind: formData.get("isBlind") === "true",
+    isBlind: isBlind === null ? undefined : isBlind === "true",
   });
 
   if (!parsed.success) {
@@ -108,7 +124,6 @@ export async function assignReviewerAction(
     return { status: "error", message: "Unauthorized action." };
   }
 
-  // Convert dueAt string to Date if present
   const input = {
     ...parsed.data,
     dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : undefined,
@@ -152,26 +167,14 @@ export async function unassignReviewerAction(
     return { status: "error", message: "Unauthorized action." };
   }
 
-  let submissionId = "";
+  let submissionId: string;
   try {
-    // First get the submission detail to find the submission ID
-    const detail = await getSubmissionDetailForEditor(
-      createPostgresEditorialRepository(getDatabase()),
-      createPostgresTenancyRepository(getDatabase()),
-      actorUserId,
-      parsed.data.assignmentId
-    );
-    
-    if (!detail) {
-      return { status: "error", message: "Assignment not found." };
-    }
-    submissionId = detail.id;
-
-    await unassignReviewerUseCase(
+    const updated = await unassignReviewerUseCase(
       createPostgresEditorialRepository(getDatabase()),
       createPostgresTenancyRepository(getDatabase()),
       parsed.data
     );
+    submissionId = updated.submissionId;
   } catch (error) {
     return getErrorState(error);
   }
@@ -191,7 +194,7 @@ export async function submitReviewAction(
     recommendation: formData.get("recommendation"),
     commentsToAuthor: formData.get("commentsToAuthor"),
     commentsToEditor: formData.get("commentsToEditor") || null,
-    scores: formData.get("scores") ? JSON.parse(formData.get("scores") as string) : null,
+    scores: parseOptionalJson(formData.get("scores"), null),
   });
 
   if (!parsed.success) {
@@ -230,7 +233,6 @@ export async function requestRevisionAction(
     submissionId: formData.get("submissionId"),
     editorUserId: formData.get("editorUserId"),
     reason: formData.get("reason"),
-    reviewerRecommendations: formData.get("reviewerRecommendations") ? JSON.parse(formData.get("reviewerRecommendations") as string) : [],
   });
 
   if (!parsed.success) {
@@ -270,7 +272,6 @@ export async function recordDecisionAction(
     editorUserId: formData.get("editorUserId"),
     outcome: formData.get("outcome"),
     rationale: formData.get("rationale"),
-    reviewerRecommendations: formData.get("reviewerRecommendations") ? JSON.parse(formData.get("reviewerRecommendations") as string) : [],
   });
 
   if (!parsed.success) {

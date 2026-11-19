@@ -117,4 +117,20 @@ errors. The member list is joined to the actor's organization membership in the
 database, so an inaccessible journal returns no staff data. The organization
 admin role is not grantable as a journal role.
 
-**Last reviewed:** 2026-11-18
+## 10. Editorial action boundaries
+
+Screening requires an explicit pass or fail choice. Reviewer assignments default
+to blind review when the form omits the setting. Invalid review score JSON
+returns a validation error. Valid reviewer scores are stored as native JSONB,
+and the read path accepts older JSON string values. Unassigning a reviewer resolves the submission from
+the authorized assignment before revalidating the editor page.
+
+Decision actions accept the editor's outcome and rationale, but never accept
+reviewer recommendation summaries from the browser. The decision transaction
+reads the latest persisted report version for each assignment and stores that
+snapshot in JSONB. A submission status change between the use case read and
+the transaction causes a conflict, preventing a decision or audit event with
+stale state. The editor remains responsible for the academic decision; review
+recommendations do not automatically determine it.
+
+**Last reviewed:** 2026-11-19

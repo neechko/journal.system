@@ -52,15 +52,6 @@ export const requestRevisionInputSchema = z.object({
   submissionId: z.uuid(),
   editorUserId: z.string().min(1),
   reason: z.string().min(1).max(5000),
-  reviewerRecommendations: z.array(
-    z.object({
-      assignmentId: z.uuid(),
-      reviewerUserId: z.string().min(1),
-      role: z.string(),
-      recommendation: z.string(),
-      reviewVersion: z.number().int().positive(),
-    })
-  ),
 });
 
 export type RequestRevisionInput = z.infer<typeof requestRevisionInputSchema>;
@@ -70,15 +61,6 @@ export const recordDecisionInputSchema = z.object({
   editorUserId: z.string().min(1),
   outcome: z.enum(["accept", "minor_revision", "major_revision", "reject"]),
   rationale: z.string().min(1).max(10000),
-  reviewerRecommendations: z.array(
-    z.object({
-      assignmentId: z.uuid(),
-      reviewerUserId: z.string().min(1),
-      role: z.string(),
-      recommendation: z.string(),
-      reviewVersion: z.number().int().positive(),
-    })
-  ),
 });
 
 export type RecordDecisionInput = z.infer<typeof recordDecisionInputSchema>;

@@ -132,13 +132,6 @@ export interface RequestRevisionInput {
   submissionId: string;
   editorUserId: string;
   reason: string;
-  reviewerRecommendations: {
-    assignmentId: string;
-    reviewerUserId: string;
-    role: string;
-    recommendation: string;
-    reviewVersion: number;
-  }[];
 }
 
 export interface RecordDecisionInput {
@@ -146,13 +139,10 @@ export interface RecordDecisionInput {
   editorUserId: string;
   outcome: "accept" | "minor_revision" | "major_revision" | "reject";
   rationale: string;
-  reviewerRecommendations: {
-    assignmentId: string;
-    reviewerUserId: string;
-    role: string;
-    recommendation: string;
-    reviewVersion: number;
-  }[];
+}
+
+export interface RecordDecisionWriteInput extends RecordDecisionInput {
+  expectedStatus: "under_review" | "revision_requested";
 }
 
 export interface WithdrawSubmissionInput {
@@ -198,7 +188,7 @@ export interface EditorialTransaction {
   unassignReviewer(input: UnassignReviewerInput): Promise<ReviewerAssignment>;
   submitReview(input: SubmitReviewInput): Promise<ReviewReport>;
   requestRevision(input: RequestRevisionInput): Promise<EditorialSubmission>;
-  recordDecision(input: RecordDecisionInput): Promise<EditorialDecision>;
+  recordDecision(input: RecordDecisionWriteInput): Promise<EditorialDecision>;
   withdrawSubmission(input: WithdrawSubmissionInput): Promise<EditorialSubmission>;
 
   insertAuditEvent(event: Omit<EditorialAuditEvent, "id" | "occurredAt">): Promise<void>;
