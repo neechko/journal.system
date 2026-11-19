@@ -47,7 +47,7 @@ jobs:
         uses: chromaui/action@latest
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-          buildScriptName: build:storybook
+          workingDir: apps/web
           storybookBuildDir: storybook-static
           autoAcceptChanges: ${{ github.ref == 'refs/heads/main' && 'main' || '' }}
           exitOnceUploaded: true
