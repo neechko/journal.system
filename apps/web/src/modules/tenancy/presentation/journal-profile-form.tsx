@@ -47,7 +47,7 @@ export function JournalProfileForm({
           Journal description
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           defaultValue={description ?? ""}
           id={`journal-description-${journalId}`}
           maxLength={2000}
@@ -63,7 +63,7 @@ export function JournalProfileForm({
           Aims and scope
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           defaultValue={aimsScope ?? ""}
           id={`journal-aims-scope-${journalId}`}
           maxLength={5000}
@@ -79,7 +79,7 @@ export function JournalProfileForm({
           Author guidelines
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           defaultValue={authorGuidelines ?? ""}
           id={`journal-author-guidelines-${journalId}`}
           maxLength={5000}
@@ -105,7 +105,7 @@ export function JournalProfileForm({
           Audit reason
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id={`journal-profile-reason-${journalId}`}
           maxLength={500}
           minLength={10}

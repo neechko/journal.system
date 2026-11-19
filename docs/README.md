@@ -23,6 +23,7 @@
 | AI workflow | `07-ai/AGENT_WORKFLOW.md` | Cara memakai agent |
 | Task prompt | `07-ai/TASK_TEMPLATE.md` | Prompt implementasi |
 | Roadmap | `08-planning/ROADMAP.md` | Tahapan produk |
+| Open decisions | `08-planning/DECISION_REGISTER.md` | Keputusan yang masih memblokir pekerjaan |
 | OJS replacement gap | `08-planning/OJS_REPLACEMENT_GAP.md` | Bukti kemampuan saat ini dan gate menuju pengganti OJS |
 | Design direction | `../DESIGN.md` | Arah visual, alasan keputusan, dan gate antislop |
 

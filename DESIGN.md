@@ -44,6 +44,9 @@ Navigasi hanya memuat tujuan yang benar-benar tersedia. Tautan ke ruang kerja ya
 ## Sistem visual dan aksesibilitas
 
 - Palet aktif maksimal tiga warna inti dan satu aksen. Token semantik boleh menandai sukses, peringatan, dan kesalahan bila status nyata. Nama token lama seperti `forest` adalah warisan implementasi, bukan izin meniru warna merek penerbit.
+- Warna hanya lewat token. Jangan menulis nilai hex di `className`; hex hidup di `@theme` (dan blok tema gelapnya). `--color-line` khusus pembatas dekoratif; batas kontrol memakai `--color-line-strong` karena harus ≥ 3:1 terhadap permukaan di sekitarnya.
+- Permukaan terbalik (hero beranda, footer) memakai grup `--color-brand*` yang tetap gelap di kedua tema, sehingga teks dan aksennya tidak ikut berubah saat tema berganti.
+- Hasil ukur 2026-11-19: `line-strong` 3,55:1 pada `paper` dan 3,19:1 pada `paper-deep` (terang), 3,28:1 pada `paper` (gelap). Teks di permukaan brand 3,14–13,12:1. Angka ini dijaga `tests/public-surface-tokens.test.ts`, bukan diklaim untuk seluruh layar.
 - Semua pasangan teks dan latar harus diukur: minimal 4,5:1 untuk teks biasa dan 3:1 untuk teks besar. Nilai ini target, belum klaim bahwa semua layar saat ini lulus.
 - Target sentuh kontrol utama dan menu minimal 44 x 44 CSS px. `sm: 24px` atau `md: 40px` tidak boleh disebut memenuhi target tersebut.
 - Sediakan fokus terlihat, nama aksesibel, label formulir, semantik native, urutan Tab yang logis, dan dukungan pembesaran teks. Dialog dapat ditutup dengan Escape.

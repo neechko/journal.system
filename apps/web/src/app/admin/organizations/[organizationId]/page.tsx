@@ -163,7 +163,7 @@ export default async function OrganizationWorkspacePage({
 
                         {isPublished ? (
                           <Link
-                            className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-forest transition-colors hover:border-forest"
+                            className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-line-strong px-4 text-sm font-semibold text-forest transition-colors hover:border-forest"
                             href={`/journals/${workspace.organization.slug}/${journal.slug}`}
                           >
                             View public page

@@ -289,7 +289,7 @@ export default async function ArticlePage({ params }: PageProps) {
             <div className="flex flex-wrap items-center gap-4">
               {article.doi && (
                 <a
-                  className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-medium text-forest hover:bg-forest/5 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-full border border-line-strong px-4 py-2 text-sm font-medium text-forest hover:bg-forest/5 transition-colors"
                   href={`https://doi.org/${article.doi}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -304,7 +304,7 @@ export default async function ArticlePage({ params }: PageProps) {
               )}
               {article.hasPdf && (
                 <a
-                  className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-medium text-forest hover:bg-forest/5 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-full border border-line-strong px-4 py-2 text-sm font-medium text-forest hover:bg-forest/5 transition-colors"
                   href={`/api/public/articles/${article.id}/pdf`}
                 >
                   <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

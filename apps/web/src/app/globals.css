@@ -9,18 +9,31 @@
 /* Tailwind needs these colors at build time to emit the utility classes. */
 @theme {
   /* Base semantic colors */
-  --color-paper: #ffffff;
-  --color-paper-deep: #fafafa;
-  --color-ink: #171717;
-  --color-muted: #525252;
-  --color-line: #e5e5e5;
+  --color-paper: #f7f4ec;
+  --color-paper-deep: #ece8dc;
+  --color-ink: #1c2926;
+  --color-muted: #505d57;
+  --color-line: #d2d0c5;
+
+  /* Boundaries that carry meaning (form controls, selected state) need 3:1. */
+  --color-line-strong: #77847c;
 
   /* Provisional action color; final brand identity is still open. */
-  --color-forest: #2563eb;
-  --color-forest-deep: #1d4ed8;
-  --color-lime: #16a34a;
-  --color-coral: #dc2626;
+  --color-forest: #1f514b;
+  --color-forest-deep: #173c39;
+  --color-lime: #d6e6d0;
+  --color-coral: #9f4d39;
   --color-white: #ffffff;
+
+  /* Inverse surface for hero and footer; dark in both themes by design. */
+  --color-brand: #173c39;
+  --color-brand-raised: #214842;
+  --color-brand-ink: #f7f4ec;
+  --color-brand-muted: #dce7dc;
+  --color-brand-line: #7a958a;
+  --color-brand-accent: #e2c49d;
+  --color-brand-accent-strong: #f1d5ad;
+  --color-brand-accent-ink: #1c2926;
 
   /* Status colors (workflow badges, alerts) */
   --color-info: #2563eb;
@@ -45,16 +58,25 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     /* Generated Tailwind v4 theme variables */
-    --color-paper: #0a0a0a;
-    --color-paper-deep: #171717;
-    --color-ink: #fafafa;
-    --color-muted: #d4d4d4;
-    --color-line: #404040;
-    --color-forest: #3b82f6;
-    --color-forest-deep: #60a5fa;
-    --color-lime: #22c55e;
-    --color-coral: #ef4444;
-    --color-white: #171717;
+    --color-paper: #14211e;
+    --color-paper-deep: #1d2b27;
+    --color-ink: #f4f2e9;
+    --color-muted: #c0d4ca;
+    --color-line: #41564c;
+    --color-line-strong: #5f736a;
+    --color-forest: #8ec4ae;
+    --color-forest-deep: #b7decb;
+    --color-lime: #315841;
+    --color-coral: #e7a28e;
+    --color-white: #14211e;
+    --color-brand: #1d2b27;
+    --color-brand-raised: #24352f;
+    --color-brand-ink: #f4f2e9;
+    --color-brand-muted: #c0d4ca;
+    --color-brand-line: #6b8b82;
+    --color-brand-accent: #e2c49d;
+    --color-brand-accent-strong: #f1d5ad;
+    --color-brand-accent-ink: #1c2926;
   }
 }
 
@@ -62,29 +84,47 @@
    Explicit light/dark mode overrides
    ============================================ */
 [data-theme="light"] {
-  --color-paper: #ffffff;
-  --color-paper-deep: #fafafa;
-  --color-ink: #171717;
-  --color-muted: #525252;
-  --color-line: #e5e5e5;
-  --color-forest: #2563eb;
-  --color-forest-deep: #1d4ed8;
-  --color-lime: #16a34a;
-  --color-coral: #dc2626;
+  --color-paper: #f7f4ec;
+  --color-paper-deep: #ece8dc;
+  --color-ink: #1c2926;
+  --color-muted: #505d57;
+  --color-line: #d2d0c5;
+  --color-line-strong: #77847c;
+  --color-forest: #1f514b;
+  --color-forest-deep: #173c39;
+  --color-lime: #d6e6d0;
+  --color-coral: #9f4d39;
   --color-white: #ffffff;
+  --color-brand: #173c39;
+  --color-brand-raised: #214842;
+  --color-brand-ink: #f7f4ec;
+  --color-brand-muted: #dce7dc;
+  --color-brand-line: #7a958a;
+  --color-brand-accent: #e2c49d;
+  --color-brand-accent-strong: #f1d5ad;
+  --color-brand-accent-ink: #1c2926;
 }
 
 [data-theme="dark"] {
-  --color-paper: #0a0a0a;
-  --color-paper-deep: #171717;
-  --color-ink: #fafafa;
-  --color-muted: #d4d4d4;
-  --color-line: #404040;
-  --color-forest: #3b82f6;
-  --color-forest-deep: #60a5fa;
-  --color-lime: #22c55e;
-  --color-coral: #ef4444;
-  --color-white: #171717;
+  --color-paper: #14211e;
+  --color-paper-deep: #1d2b27;
+  --color-ink: #f4f2e9;
+  --color-muted: #c0d4ca;
+  --color-line: #41564c;
+  --color-line-strong: #5f736a;
+  --color-forest: #8ec4ae;
+  --color-forest-deep: #b7decb;
+  --color-lime: #315841;
+  --color-coral: #e7a28e;
+  --color-white: #14211e;
+  --color-brand: #1d2b27;
+  --color-brand-raised: #24352f;
+  --color-brand-ink: #f4f2e9;
+  --color-brand-muted: #c0d4ca;
+  --color-brand-line: #6b8b82;
+  --color-brand-accent: #e2c49d;
+  --color-brand-accent-strong: #f1d5ad;
+  --color-brand-accent-ink: #1c2926;
 }
 
 /* ============================================
@@ -492,8 +532,8 @@ body {
   font-size: var(--font-size-0);
   line-height: var(--line-height-normal);
   font-weight: var(--font-weight-normal);
-  color: var(--color-text-primary);
-  background-color: var(--color-background-primary);
+  color: var(--color-ink);
+  background-color: var(--color-paper);
   letter-spacing: var(--letter-spacing-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -502,7 +542,7 @@ body {
 
 /* Focus visible for keyboard navigation */
 :focus-visible {
-  outline: 2px solid var(--color-border-focus);
+  outline: 2px solid var(--color-forest);
   outline-offset: 2px;
 }
 
@@ -513,8 +553,8 @@ body {
 
 /* Selection */
 ::selection {
-  background-color: var(--color-brand-primary-light);
-  color: var(--color-brand-primary);
+  background-color: var(--color-forest);
+  color: var(--color-paper);
 }
 
 /* Scrollbar */
@@ -548,7 +588,6 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   letter-spacing: var(--letter-spacing-tight);
-  color: var(--color-text-primary);
 }
 
 h1 { font-size: var(--font-size-4); }
@@ -574,7 +613,7 @@ a:hover {
 }
 
 a:focus-visible {
-  outline: 2px solid var(--color-border-focus);
+  outline: 2px solid var(--color-forest);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -587,7 +626,7 @@ pre {
 }
 
 code {
-  background-color: var(--color-background-secondary);
+  background-color: var(--color-paper-deep);
   padding: 0.125em 0.375em;
   border-radius: 4px;
 }

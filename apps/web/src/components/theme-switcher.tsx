@@ -47,7 +47,7 @@ export function ThemeSwitcher({ variant = "public" }: { variant?: "public" | "wo
   const className =
     variant === "workspace"
       ? "inline-flex size-11 items-center justify-center rounded-lg border border-white/25 text-white transition-colors hover:border-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      : "inline-flex size-11 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:border-forest hover:text-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest";
+      : "inline-flex size-11 items-center justify-center rounded-lg border border-line-strong text-muted transition-colors hover:border-forest hover:text-forest focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest";
 
   return (
     <button

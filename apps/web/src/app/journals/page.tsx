@@ -18,7 +18,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Journal directory | Scholarly Publishing Platform",
+  title: "Journal directory",
   description: "Find journals that have been published on this platform.",
 };
 
@@ -70,17 +70,28 @@ export default async function PublicJournalsPage({
       return (
         <main id="main-content" className="min-h-screen bg-paper text-ink">
           <PublicSiteHeader />
-          <div className="mx-auto min-h-[50vh] max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
-              Public directory
-            </p>
-            <h1 className="mt-3 font-display text-4xl text-ink sm:text-5xl">
-              Journal directory
-            </h1>
-            <p className="mt-5 max-w-2xl leading-7 text-muted">
-              The journal directory is unavailable because application storage
-              has not been configured.
-            </p>
+          <div className="border-b border-line bg-paper-deep">
+            <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-forest">Public index</p>
+              <h1 className="mt-4 font-display text-[clamp(3rem,5vw,5rem)] leading-[1.05] tracking-[-0.035em] text-ink">
+                Journal directory
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-muted sm:text-lg">
+                Find journals and read the profiles their publishers have made public.
+              </p>
+            </div>
+          </div>
+          <div className="mx-auto grid min-h-[38vh] max-w-7xl gap-6 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+            <h2 className="border-t-2 border-ink pt-6 font-display text-3xl text-ink">Directory unavailable</h2>
+            <div className="border-t-2 border-ink pt-6">
+              <p className="max-w-xl leading-7 text-muted" role="status">
+                Journal data is not configured in this preview environment.
+                Published profiles will appear here when the catalog is connected.
+              </p>
+              <Link className="mt-5 inline-flex min-h-11 items-center font-semibold text-forest underline underline-offset-4" href="/">
+                Return to the platform home
+              </Link>
+            </div>
           </div>
           <PublicSiteFooter />
         </main>
@@ -100,7 +111,8 @@ export default async function PublicJournalsPage({
   return (
     <main id="main-content" className="min-h-screen bg-paper text-ink">
       <PublicSiteHeader />
-      <div className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
+      <div className="border-b border-line bg-paper-deep">
+        <div className="mx-auto max-w-7xl px-5 pb-8 pt-8 sm:px-8 sm:pt-10">
         <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
           <Link className="hover:text-forest" href="/">
             Home
@@ -111,32 +123,36 @@ export default async function PublicJournalsPage({
           <span aria-current="page">Journals</span>
         </nav>
 
-        <header className="mt-8 grid gap-6 border-b border-line pb-9 md:grid-cols-[1fr_auto] md:items-end">
+        <header className="mt-10 grid gap-8 pb-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.6fr)] lg:items-end lg:gap-16">
           <div>
-            <h1 className="mt-3 font-display text-4xl leading-tight tracking-tight text-ink sm:text-5xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-forest">Public index</p>
+            <h1 className="mt-4 font-display text-[clamp(3rem,5vw,5rem)] leading-[1.05] tracking-[-0.035em] text-ink">
               Journal directory
             </h1>
-            <p className="mt-4 max-w-2xl leading-7 text-muted">
-              Find journals by title, publishing organization, or description.
-              This directory only includes journal pages that have been
-              published.
+            <p className="mt-5 max-w-2xl text-base leading-8 text-muted sm:text-lg">
+              Find a journal by title or publisher, then read the profile its
+              organization has made public.
             </p>
           </div>
+          <p className="max-w-sm border-l-2 border-forest pl-5 text-sm leading-7 text-muted">
+            Scope, author guidance, and archives appear when the journal has
+            published that information.
+          </p>
         </header>
 
         <form
           action="/journals"
-          className="mt-8 max-w-3xl rounded-2xl border border-line bg-white p-3 shadow-sm sm:p-4"
+          className="max-w-4xl border-t-2 border-ink pt-6"
           method="get"
         >
           <label
-            className="mb-2 block text-sm font-semibold text-ink"
+            className="mb-3 block text-sm font-semibold text-ink"
             htmlFor="journal-search"
           >
             Search journals
           </label>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-xl border border-line bg-paper px-3 focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15">
+            <div className="flex min-h-12 min-w-0 flex-1 items-center gap-3 border border-line-strong bg-paper px-3 focus-within:border-forest focus-within:ring-2 focus-within:ring-forest/15">
               <svg
                 aria-hidden="true"
                 className="size-5 shrink-0 text-muted"
@@ -159,7 +175,7 @@ export default async function PublicJournalsPage({
               </svg>
               <input
                 autoComplete="off"
-                className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted/75"
+                className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
                 defaultValue={searchTerm}
                 id="journal-search"
                 maxLength={100}
@@ -169,7 +185,7 @@ export default async function PublicJournalsPage({
               />
             </div>
             <button
-              className="min-h-12 rounded-xl bg-forest px-6 text-sm font-semibold text-white transition-colors hover:bg-forest-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
+              className="min-h-12 bg-forest px-6 text-sm font-semibold text-white transition-colors hover:bg-forest-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
               type="submit"
             >
               Search journals
@@ -187,91 +203,69 @@ export default async function PublicJournalsPage({
             </p>
           ) : null}
         </form>
+        </div>
+      </div>
 
-        <section aria-labelledby="results-heading" className="mt-12">
-          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
+      <div className="mx-auto max-w-7xl px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
+
+        <section aria-labelledby="results-heading">
+          <div className="flex flex-wrap items-end justify-between gap-4 pb-5">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted">
-                Results
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-forest">
+                Directory results
               </p>
               <h2
-                className="mt-1 font-display text-2xl text-ink"
+                className="mt-2 font-display text-3xl text-ink"
                 id="results-heading"
               >
                 Public journals
               </h2>
             </div>
             <p className="text-sm text-muted">
-              Up to {PUBLIC_JOURNAL_PAGE_SIZE} journals per page
+              {catalog.journals.length} of up to {PUBLIC_JOURNAL_PAGE_SIZE} on this page
             </p>
           </div>
 
           {catalog.journals.length > 0 ? (
-            <ul className="mt-6 grid gap-4 lg:grid-cols-2">
+            <ul className="divide-y divide-line border-t-2 border-ink">
               {catalog.journals.map((journal) => (
-                <li key={`${journal.organizationSlug}/${journal.slug}`}>
-                  <article className="group flex h-full flex-col rounded-2xl border border-line bg-white p-6 transition-shadow hover:shadow-lg hover:shadow-forest/5 sm:p-7">
-                    <div className="flex items-start justify-between gap-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted">
-                        {journal.organizationName}
-                      </p>
-                      <span
-                        aria-hidden="true"
-                        className="grid size-9 shrink-0 place-items-center rounded-full bg-paper text-forest transition-colors group-hover:bg-lime"
-                      >
-                        ↗
-                      </span>
-                    </div>
-                    <h3 className="mt-5 font-display text-2xl leading-tight text-ink sm:text-3xl">
+                <li className="grid gap-4 py-8 sm:py-10 lg:grid-cols-[minmax(11rem,0.5fr)_minmax(0,1.5fr)_auto] lg:gap-8" key={`${journal.organizationSlug}/${journal.slug}`}>
+                  <p className="pt-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+                    {journal.organizationName}
+                  </p>
+                  <div>
+                    <h3 className="font-display text-2xl leading-tight text-ink sm:text-3xl">
                       <Link
-                        className="decoration-coral decoration-2 underline-offset-4 group-hover:underline"
+                        className="underline decoration-line underline-offset-4 hover:decoration-forest"
                         href={`/journals/${journal.organizationSlug}/${journal.slug}`}
                       >
                         {journal.title}
                       </Link>
                     </h3>
-                    {journal.description ? (
-                      <p className="mt-4 flex-1 text-sm leading-7 text-muted">
-                        {journal.description}
-                      </p>
-                    ) : (
-                      <p className="mt-4 flex-1 text-sm leading-7 text-muted">
-                        Open the journal profile to view information provided
-                        by its publisher.
-                      </p>
-                    )}
-                    <div className="mt-6 flex items-center justify-between border-t border-line pt-4">
-                      <span className="text-xs font-medium text-muted">
-                        Journal profile
-                      </span>
-                      <Link
-                        className="text-sm font-semibold text-forest underline decoration-forest/30 underline-offset-4 hover:decoration-forest"
-                        href={`/journals/${journal.organizationSlug}/${journal.slug}`}
-                      >
-                        View journal
-                      </Link>
-                    </div>
-                  </article>
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+                      {journal.description || "Open the profile for information supplied by its publisher."}
+                    </p>
+                  </div>
+                  <Link
+                    className="inline-flex min-h-11 items-center justify-self-start text-sm font-semibold text-forest underline decoration-forest/40 underline-offset-4 hover:decoration-forest"
+                    href={`/journals/${journal.organizationSlug}/${journal.slug}`}
+                  >
+                    View profile
+                  </Link>
                 </li>
               ))}
             </ul>
           ) : (
             <div
-              className="mt-6 rounded-2xl border border-dashed border-line bg-white/70 px-6 py-12 text-center"
+              className="grid gap-4 border-t-2 border-ink py-10 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] sm:gap-12"
               role="status"
             >
-              <span
-                aria-hidden="true"
-                className="mx-auto grid size-12 place-items-center rounded-full bg-paper-deep text-xl text-forest"
-              >
-                {searchTerm ? "⌕" : "＋"}
-              </span>
-              <h3 className="mt-4 font-display text-2xl text-ink">
+              <h3 className="font-display text-2xl text-ink sm:text-3xl">
                 {searchTerm
                   ? "No matching journals found"
                   : "No public journals yet"}
               </h3>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
+              <p className="max-w-md text-sm leading-7 text-muted">
                 {searchTerm
                   ? "Try another search, such as a journal title or publishing organization."
                   : "Journals appear here after their publishers make the profile public."}
@@ -287,7 +281,7 @@ export default async function PublicJournalsPage({
           >
             {catalog.page > 1 ? (
               <Link
-                className="inline-flex min-h-11 items-center rounded-lg border border-line bg-paper px-4 text-sm font-semibold text-forest hover:border-forest"
+                className="inline-flex min-h-11 items-center rounded-lg border border-line-strong bg-paper px-4 text-sm font-semibold text-forest hover:border-forest"
                 href={pageHref(catalog.page - 1)}
               >
                 ← Previous
@@ -300,7 +294,7 @@ export default async function PublicJournalsPage({
             </span>
             {catalog.hasNextPage ? (
               <Link
-                className="inline-flex min-h-11 items-center rounded-lg border border-line bg-paper px-4 text-sm font-semibold text-forest hover:border-forest"
+                className="inline-flex min-h-11 items-center rounded-lg border border-line-strong bg-paper px-4 text-sm font-semibold text-forest hover:border-forest"
                 href={pageHref(catalog.page + 1)}
               >
                 Next →

@@ -30,7 +30,7 @@ export function JournalForm({ organizationId }: { organizationId: string }) {
           Journal title
         </label>
         <input
-          className="mt-2 min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 min-h-11 w-full rounded-lg border border-line-strong bg-paper px-3 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id="journal-title"
           maxLength={160}
           name="title"
@@ -42,7 +42,7 @@ export function JournalForm({ organizationId }: { organizationId: string }) {
           URL slug
         </label>
         <input
-          className="mt-2 min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 min-h-11 w-full rounded-lg border border-line-strong bg-paper px-3 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id="journal-slug"
           maxLength={63}
           name="slug"
@@ -55,7 +55,7 @@ export function JournalForm({ organizationId }: { organizationId: string }) {
           Description (optional)
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id="journal-description"
           maxLength={2000}
           name="description"
@@ -67,7 +67,7 @@ export function JournalForm({ organizationId }: { organizationId: string }) {
           Audit reason
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id="journal-reason"
           maxLength={500}
           minLength={10}

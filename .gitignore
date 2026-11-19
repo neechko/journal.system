@@ -11,6 +11,11 @@ apps/web/scripts/seed-journals.mjs
 apps/web/lint.txt
 
 /skills
+plan.txt
+
+# Local visual QA captures
+/.tmp-qa/
+/apps/web/.tmp_ui_capture.cjs
 
 # Next.js
 **/.next/

@@ -30,7 +30,7 @@ export function ManuscriptUploadForm({
         </label>
         <input
           accept=".pdf,application/pdf"
-          className="mt-2 block min-h-11 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink file:mr-3 file:rounded-full file:border-0 file:bg-lime/50 file:px-3 file:py-1 file:text-sm file:font-semibold file:text-forest-deep"
+          className="mt-2 block min-h-11 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink file:mr-3 file:rounded-full file:border-0 file:bg-lime/50 file:px-3 file:py-1 file:text-sm file:font-semibold file:text-forest-deep"
           id={fileInputId}
           name="manuscript"
           required

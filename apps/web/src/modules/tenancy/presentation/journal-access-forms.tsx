@@ -25,7 +25,7 @@ export function GrantJournalRoleForm({ organizationId, journalId }: JournalScope
           <label className="block text-sm font-semibold text-ink" htmlFor="staff-email">Account email</label>
           <input
             autoComplete="email"
-            className="mt-2 min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
+            className="mt-2 min-h-11 w-full rounded-lg border border-line-strong bg-paper px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
             id="staff-email"
             maxLength={254}
             name="email"
@@ -36,7 +36,7 @@ export function GrantJournalRoleForm({ organizationId, journalId }: JournalScope
         <div>
           <label className="block text-sm font-semibold text-ink" htmlFor="staff-role">Journal role</label>
           <select
-            className="mt-2 min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
+            className="mt-2 min-h-11 w-full rounded-lg border border-line-strong bg-paper px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
             defaultValue=""
             id="staff-role"
             name="role"
@@ -54,7 +54,7 @@ export function GrantJournalRoleForm({ organizationId, journalId }: JournalScope
       <div className="mt-4">
         <label className="block text-sm font-semibold text-ink" htmlFor="grant-reason">Reason for access</label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
           id="grant-reason"
           maxLength={500}
           minLength={10}
@@ -93,7 +93,7 @@ export function RevokeJournalRoleForm({
       <label className="block text-sm font-semibold text-ink" htmlFor={reasonId}>Reason for removing access</label>
       <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start">
         <input
-          className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-paper px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
+          className="min-h-11 min-w-0 flex-1 rounded-lg border border-line-strong bg-paper px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
           id={reasonId}
           maxLength={500}
           minLength={10}

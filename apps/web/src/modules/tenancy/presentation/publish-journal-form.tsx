@@ -38,7 +38,7 @@ export function PublishJournalForm({
           Audit reason
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id={`publish-reason-${journalId}`}
           maxLength={500}
           minLength={10}

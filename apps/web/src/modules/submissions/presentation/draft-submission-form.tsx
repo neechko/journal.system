@@ -71,7 +71,7 @@ export function DraftSubmissionForm(props: DraftSubmissionFormProps) {
           Working title
         </label>
         <input
-          className="mt-2 min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 min-h-11 w-full rounded-lg border border-line-strong bg-paper px-3 text-sm text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id={titleId}
           maxLength={300}
           minLength={5}
@@ -88,7 +88,7 @@ export function DraftSubmissionForm(props: DraftSubmissionFormProps) {
           Abstract <span className="font-normal text-muted">(optional)</span>
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id={abstractId}
           maxLength={10_000}
           name="abstract"
@@ -109,7 +109,7 @@ export function DraftSubmissionForm(props: DraftSubmissionFormProps) {
           </span>
         </label>
         <textarea
-          className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
+          className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm leading-6 text-ink outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/15"
           id={keywordsId}
           maxLength={2048}
           name="keywords"

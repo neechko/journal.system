@@ -192,7 +192,7 @@ export default async function ReviewerSubmissionDetailPage({ params }: PageProps
                         </p>
                       </div>
                       <a
-                        className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-forest transition-colors hover:bg-forest/5"
+                        className="inline-flex min-h-11 items-center rounded-lg border border-line-strong px-4 text-sm font-semibold text-forest transition-colors hover:bg-forest/5"
                         href={`/api/reviewer/submissions/${detail.id}/manuscripts/${manuscript.id}`}
                       >
                         Download
@@ -217,7 +217,7 @@ export default async function ReviewerSubmissionDetailPage({ params }: PageProps
                   
                   <div>
                     <label className="block text-sm font-semibold text-ink">Recommendation</label>
-                    <select name="recommendation" required className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink">
+                    <select name="recommendation" required className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink">
                       <option value="">Select recommendation</option>
                       <option value="accept">Accept</option>
                       <option value="minor_revision">Minor Revision</option>
@@ -228,30 +228,30 @@ export default async function ReviewerSubmissionDetailPage({ params }: PageProps
 
                   <div>
                     <label className="block text-sm font-semibold text-ink">Comments to Author (required)</label>
-                    <textarea name="commentsToAuthor" required rows={8} className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm leading-6 text-ink" placeholder="Provide constructive feedback for the author..."></textarea>
+                    <textarea name="commentsToAuthor" required rows={8} className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm leading-6 text-ink" placeholder="Provide constructive feedback for the author..."></textarea>
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-ink">Comments to Editor (confidential, optional)</label>
-                    <textarea name="commentsToEditor" rows={4} className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm leading-6 text-ink" placeholder="Confidential comments for the editor only..."></textarea>
+                    <textarea name="commentsToEditor" rows={4} className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm leading-6 text-ink" placeholder="Confidential comments for the editor only..."></textarea>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-sm font-semibold text-ink">Originality (1-5)</label>
-                      <input type="number" name="originality" min="1" max="5" className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink" />
+                      <input type="number" name="originality" min="1" max="5" className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink">Methodology (1-5)</label>
-                      <input type="number" name="methodology" min="1" max="5" className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink" />
+                      <input type="number" name="methodology" min="1" max="5" className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink">Clarity (1-5)</label>
-                      <input type="number" name="clarity" min="1" max="5" className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink" />
+                      <input type="number" name="clarity" min="1" max="5" className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-ink">Significance (1-5)</label>
-                      <input type="number" name="significance" min="1" max="5" className="mt-2 w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink" />
+                      <input type="number" name="significance" min="1" max="5" className="mt-2 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink" />
                     </div>
                   </div>
 

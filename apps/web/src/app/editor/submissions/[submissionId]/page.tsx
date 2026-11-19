@@ -161,7 +161,7 @@ export default async function EditorSubmissionDetailPage({ params }: PageProps) 
                         </p>
                       </div>
                       <a
-                        className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-forest transition-colors hover:bg-forest/5"
+                        className="inline-flex min-h-11 items-center rounded-lg border border-line-strong px-4 text-sm font-semibold text-forest transition-colors hover:bg-forest/5"
                         href={`/api/author/submissions/${detail.id}/manuscripts/${manuscript.id}`}
                       >
                         Download
