@@ -64,54 +64,56 @@ export default async function StartSubmissionDraftPage({
   }
 
   return (
-    <main id="main-content" className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
+    <>
       <PublicSiteHeader />
-      <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
-        <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
-          <Link className="hover:text-forest" href="/">
-            Home
-          </Link>
-          <span aria-hidden="true" className="mx-2 text-line">
-            /
-          </span>
-          <Link
-            className="hover:text-forest"
-            href={`/journals/${organizationSlug}/${journalSlug}`}
-          >
-            {journal.title}
-          </Link>
-          <span aria-hidden="true" className="mx-2 text-line">
-            /
-          </span>
-          <span aria-current="page">New draft</span>
-        </nav>
+      <main id="main-content" className="min-h-screen bg-paper text-ink" data-journal={journalSlug}>
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+          <nav aria-label="Breadcrumb" className="text-xs font-medium text-muted">
+            <Link className="hover:text-forest" href="/">
+              Home
+            </Link>
+            <span aria-hidden="true" className="mx-2 text-line">
+              /
+            </span>
+            <Link
+              className="hover:text-forest"
+              href={`/journals/${organizationSlug}/${journalSlug}`}
+            >
+              {journal.title}
+            </Link>
+            <span aria-hidden="true" className="mx-2 text-line">
+              /
+            </span>
+            <span aria-current="page">New draft</span>
+          </nav>
 
-        <header className="mt-8 max-w-3xl">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
-            Author workspace
-          </p>
-          <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">
-            Start a submission draft
-          </h1>
-          <p className="mt-4 leading-7 text-muted">
-            {journal.title} · {journal.organizationName}
-          </p>
-          <p className="mt-3 max-w-2xl leading-7 text-muted">
-            Save a working title, abstract, and optional keywords before
-            preparing your manuscript. This draft is visible only to you and
-            does not enter editorial review.
-          </p>
-        </header>
+          <header className="mt-8 max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest">
+              Author workspace
+            </p>
+            <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">
+              Start a submission draft
+            </h1>
+            <p className="mt-4 leading-7 text-muted">
+              {journal.title} · {journal.organizationName}
+            </p>
+            <p className="mt-3 max-w-2xl leading-7 text-muted">
+              Save a working title, abstract, and optional keywords before
+              preparing your manuscript. This draft is visible only to you and
+              does not enter editorial review.
+            </p>
+          </header>
 
-        <section className="mt-8 max-w-3xl">
-          <DraftSubmissionForm
-            mode="create"
-            journalSlug={journalSlug}
-            organizationSlug={organizationSlug}
-          />
-        </section>
-      </div>
+          <section className="mt-8 max-w-3xl">
+            <DraftSubmissionForm
+              mode="create"
+              journalSlug={journalSlug}
+              organizationSlug={organizationSlug}
+            />
+          </section>
+        </div>
+      </main>
       <PublicSiteFooter />
-    </main>
+    </>
   );
 }
