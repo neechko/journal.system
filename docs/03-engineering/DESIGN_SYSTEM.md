@@ -57,6 +57,12 @@ bahwa target aksesibilitas telah tercapai.
 - Header dan footer publik dipakai bersama oleh beranda, katalog, dan profil
   jurnal. Workspace pengelola memakai token yang sama dengan navigasi privat
   tersendiri; authorization dan guard tetap berada di server.
+- Profil jurnal memakai hero `bg-brand` yang tetap gelap di kedua tema, bukan
+  `bg-forest` yang berbalik menjadi sage pada tema gelap. Di bawah hero ada
+  sub-navigasi bagian (Aims and scope, For authors, Latest articles, Archive)
+  yang menempel pada `top-[77px]`, yaitu tinggi header 76 px ditambah garis 1 px.
+  Setiap target anchor memakai `scroll-mt-32` supaya judul bagian tidak tertutup
+  header dan sub-navigasi.
 - Data contoh atau jurnal yang dipublikasikan ditampilkan sebagai data nyata
   dari katalog publik; jangan mengganti data dengan angka, indeksasi, DOI,
   ISSN, atau afiliasi fiktif untuk mempercantik tampilan.

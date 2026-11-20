@@ -10,6 +10,7 @@ const css = readFileSync(cssPath, "utf8");
 const publicSurfaces = [
   "../src/app/page.tsx",
   "../src/app/journals/page.tsx",
+  "../src/app/journals/[organizationSlug]/[journalSlug]/page.tsx",
   "../src/components/public-site-header.tsx",
   "../src/components/public-site-footer.tsx",
 ];
